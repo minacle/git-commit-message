@@ -10,19 +10,53 @@ from openai import OpenAI
 _DEFAULT_MODEL: Final[str] = "gpt-5-mini"
 
 # 시스템 프롬프트를 상수로 유지하여 중복을 제거합니다.
-_SYSTEM_PROMPT: Final[str] = (
+_SYSTEM_PROMPT_BASE: Final[str] = (
     "You are an expert Git commit message generator. "
     "Always use British English (en-GB) spelling and style. "
-    "Write a single-line imperative subject (<=72 chars); add a body with bullet points when beneficial. "
     "Explain the intent and rationale briefly. "
     "Consider the user-provided auxiliary context if present. "
     "Return only the commit message text, without labels or code fences."
 )
 
+def _build_system_prompt(*, single_line: bool, subject_max: int | None) -> str:
+    max_len = subject_max or 72
+    if single_line:
+        return (
+            f"You are an expert Git commit message generator. "
+            f"Always use British English (en-GB) spelling and style. "
+            f"Return a single-line imperative subject only (<= {max_len} chars). "
+            f"Do not include a body, bullet points, or any rationale. Do not include any line breaks. "
+            f"Consider the user-provided auxiliary context if present. "
+            f"Return only the commit message text (no code fences or prefixes like 'Commit message:')."
+        )
+    return (
+        f"You are an expert Git commit message generator. "
+        f"Always use British English (en-GB) spelling and style. "
+        f"Write a single-line imperative subject (<= {max_len} chars). Then include a body in this format.\n\n"
+        f"Example format (do not include the --- lines in the output):\n\n"
+        f"---\n\n"
+        f"<Subject line>\n\n"
+        f"- <detail 1>\n"
+        f"- <detail 2>\n"
+        f"- <detail N>\n\n"
+        f"Rationale: <1-2 concise sentences explaining the intent and why>\n\n"
+        f"---\n\n"
+        f"Guidelines:\n"
+        f"- Use '-' bullets; keep each bullet short (<= 1 line).\n"
+        f"- Prefer imperative mood verbs (Add, Fix, Update, Remove, Refactor, Document, etc.).\n"
+        f"- Focus on what changed and why; avoid copying diff hunks verbatim.\n"
+        f"- The only allowed label is 'Rationale:'; do not add other headings or prefaces.\n"
+        f"- Do not include the '---' delimiter lines, code fences, or any surrounding labels like 'Commit message:'.\n"
+        f"- Do not copy or reuse any example text verbatim; produce original content based on the provided diff and context.\n"
+        f"- If few details are necessary, include at least one bullet summarising the key change.\n"
+        f"- Consider the user-provided auxiliary context if present.\n"
+        f"Return only the commit message text in the above format (no code fences or extra labels)."
+    )
 
-def _system_message() -> dict[str, str]:
+
+def _system_message(*, single_line: bool, subject_max: int | None) -> dict[str, str]:
     """시스템 메시지 딕셔너리를 생성합니다."""
-    return {"role": "system", "content": _SYSTEM_PROMPT}
+    return {"role": "system", "content": _build_system_prompt(single_line=single_line, subject_max=subject_max)}
 
 
 class CommitMessageResult:
@@ -115,6 +149,8 @@ def generate_commit_message(
     diff: str,
     hint: str | None,
     model: str | None,
+    single_line: bool = False,
+    subject_max: int | None = None,
 ) -> str:
     """OpenAI GPT 모델을 호출하여 커밋 메시지를 생성합니다."""
 
@@ -128,7 +164,10 @@ def generate_commit_message(
     _combined_prompt, user_messages = _build_user_messages(diff=diff, hint=hint)
 
     # Chat Completions API를 사용해 한 번의 응답을 생성 (hint와 diff를 별도 user 메시지로 전송)
-    all_messages: list[dict[str, str]] = [_system_message(), *user_messages]
+    all_messages: list[dict[str, str]] = [
+        _system_message(single_line=single_line, subject_max=subject_max),
+        *user_messages,
+    ]
 
     resp = client.chat.completions.create(
         model=chosen_model,
@@ -146,6 +185,8 @@ def generate_commit_message_with_info(
     diff: str,
     hint: str | None,
     model: str | None,
+    single_line: bool = False,
+    subject_max: int | None = None,
 ) -> CommitMessageResult:
     """OpenAI GPT 호출 결과와 디버그 정보를 함께 반환합니다.
 
@@ -163,7 +204,10 @@ def generate_commit_message_with_info(
     client = OpenAI(api_key=api_key)
     combined_prompt, user_messages = _build_user_messages(diff=diff, hint=hint)
 
-    all_messages = [_system_message(), *user_messages]
+    all_messages = [
+        _system_message(single_line=single_line, subject_max=subject_max),
+        *user_messages,
+    ]
 
     resp = client.chat.completions.create(
         model=chosen_model,
@@ -187,7 +231,7 @@ def generate_commit_message_with_info(
     return CommitMessageResult(
         message=response_text,
         model=chosen_model,
-    prompt=combined_prompt,
+        prompt=combined_prompt,
         response_text=response_text,
         response_id=response_id,
         prompt_tokens=prompt_tokens,

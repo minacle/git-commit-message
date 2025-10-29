@@ -17,6 +17,18 @@ git add -A
 git-commit-message "optional extra context about the change"
 ```
 
+- Force single-line subject only:
+
+```fish
+git-commit-message --one-line "optional context"
+```
+
+- Limit subject length (default 72):
+
+```fish
+git-commit-message --one-line --max-length 50 "optional context"
+```
+
 - Commit immediately with editor:
 
 ```fish

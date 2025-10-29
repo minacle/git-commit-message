@@ -67,6 +67,21 @@ def _build_parser() -> ArgumentParser:
         help="요청/응답과 토큰 사용량을 출력합니다.",
     )
 
+    parser.add_argument(
+        "--one-line",
+        dest="one_line",
+        action="store_true",
+        help="생성된 메시지를 한 줄(subject)만 사용합니다.",
+    )
+
+    parser.add_argument(
+        "--max-length",
+        dest="max_length",
+        type=int,
+        default=None,
+        help="제목(첫 줄) 최대 글자 수를 지정합니다 (기본: 72).",
+    )
+
     return parser
 
 
@@ -104,6 +119,8 @@ def _run(
                 diff=diff_text,
                 hint=hint,
                 model=args.model,
+                single_line=getattr(args, "one_line", False),
+                subject_max=getattr(args, "max_length", None),
             )
             message = result.message
         else:
@@ -111,10 +128,22 @@ def _run(
                 diff=diff_text,
                 hint=hint,
                 model=args.model,
+                single_line=getattr(args, "one_line", False),
+                subject_max=getattr(args, "max_length", None),
             )
     except Exception as exc:  # noqa: BLE001 - 표준 출력 메시지 유지 목적
         print(f"커밋 메시지 생성 실패: {exc}", file=sys.stderr)
         return 3
+
+    # 옵션: 한 줄 메시지로 강제
+    if getattr(args, "one_line", False):
+        # 첫 번째 비어있지 않은 라인만 사용
+        for line in (ln.strip() for ln in message.splitlines()):
+            if line:
+                message = line
+                break
+        else:
+            message = ""
 
     if not args.commit:
         if args.debug and result is not None:
