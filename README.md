@@ -58,3 +58,9 @@ Environment:
 - `OPENAI_API_KEY`: required
 - `GIT_COMMIT_MESSAGE_MODEL` or `OPENAI_MODEL`: optional (default: `gpt-5-mini`)
 - `GIT_COMMIT_MESSAGE_LANGUAGE` or `OPENAI_LANGUAGE`: optional (default: `en-GB`)
+
+## AI‑generated code notice
+
+Parts of this project were created with assistance from AI tools (e.g. large language models).
+All AI‑assisted contributions were reviewed and adapted by maintainers before inclusion.
+If you need provenance for specific changes, please refer to the Git history and commit messages.
