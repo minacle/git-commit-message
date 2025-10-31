@@ -1,18 +1,18 @@
 [project]
 name = "git-commit-message"
-version = "0.3.0"
-description = "Add your description here"
+version = "0.4.0"
+description = "Generate Git commit messages from staged changes using OpenAI GPT"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-	"openai>=1.35.0",
+	"openai>=2.6.1",
 ]
 
 [project.scripts]
 git-commit-message = "git_commit_message:main"
 
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=80", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
