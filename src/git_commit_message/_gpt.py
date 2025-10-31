@@ -10,7 +10,12 @@ from openai import OpenAI
 _DEFAULT_MODEL: Final[str] = "gpt-5-mini"
 _DEFAULT_LANGUAGE: Final[str] = "en-GB"
 
-def _build_system_prompt(*, single_line: bool, subject_max: int | None, language: str) -> str:
+def _build_system_prompt(
+    *,
+    single_line: bool,
+    subject_max: int | None,
+    language: str,
+) -> str:
     max_len = subject_max or 72
     if single_line:
         return (
@@ -51,7 +56,12 @@ def _build_system_prompt(*, single_line: bool, subject_max: int | None, language
     )
 
 
-def _system_message(*, single_line: bool, subject_max: int | None, language: str) -> dict[str, str]:
+def _system_message(
+    *,
+    single_line: bool,
+    subject_max: int | None,
+    language: str,
+) -> dict[str, str]:
     """Create the system message dictionary."""
     return {"role": "system", "content": _build_system_prompt(single_line=single_line, subject_max=subject_max, language=language)}
 
@@ -77,6 +87,7 @@ class CommitMessageResult:
 
     def __init__(
         self,
+        /,
         *,
         message: str,
         model: str,
