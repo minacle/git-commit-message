@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""OpenAI GPT 모델을 호출하여 커밋 메시지를 생성합니다."""
+"""Generate Git commit messages by calling an OpenAI GPT model."""
 
 import os
 from typing import Final, Any, cast
@@ -8,15 +8,6 @@ from openai import OpenAI
 
 
 _DEFAULT_MODEL: Final[str] = "gpt-5-mini"
-
-# 시스템 프롬프트를 상수로 유지하여 중복을 제거합니다.
-_SYSTEM_PROMPT_BASE: Final[str] = (
-    "You are an expert Git commit message generator. "
-    "Always use British English (en-GB) spelling and style. "
-    "Explain the intent and rationale briefly. "
-    "Consider the user-provided auxiliary context if present. "
-    "Return only the commit message text, without labels or code fences."
-)
 
 def _build_system_prompt(*, single_line: bool, subject_max: int | None) -> str:
     max_len = subject_max or 72
@@ -55,16 +46,16 @@ def _build_system_prompt(*, single_line: bool, subject_max: int | None) -> str:
 
 
 def _system_message(*, single_line: bool, subject_max: int | None) -> dict[str, str]:
-    """시스템 메시지 딕셔너리를 생성합니다."""
+    """Create the system message dictionary."""
     return {"role": "system", "content": _build_system_prompt(single_line=single_line, subject_max=subject_max)}
 
 
 class CommitMessageResult:
-    """커밋 메시지 생성 결과와 디버그 정보를 보관합니다.
+    """Hold the generated commit message and debugging information.
 
     Notes
     -----
-    모든 필드는 읽기 전용 관용으로 취급하세요.
+    Treat all fields as read-only by convention.
     """
 
     __slots__ = (
@@ -104,7 +95,7 @@ def _resolve_model(
     *,
     model: str | None,
 ) -> str:
-    """모델 이름을 결정합니다."""
+    """Resolve the model name."""
 
     return (
         model
@@ -119,13 +110,13 @@ def _build_user_messages(
     diff: str,
     hint: str | None,
 ) -> tuple[str, list[dict[str, str]]]:
-    """사용자 메시지를 두 개로 분리해 구성합니다.
+    """Compose user messages, separating auxiliary context and diff.
 
     Returns
     -------
     tuple[str, list[dict[str, str]]]
-        첫 번째 요소는 디버그 출력을 위한 결합 문자열, 두 번째 요소는
-        Chat Completions API에 전달할 user 메시지 목록입니다.
+        The first element is the combined string for debugging output; the
+        second is the list of user messages to send to the Chat Completions API.
     """
 
     hint_content: str | None = (
@@ -152,18 +143,18 @@ def generate_commit_message(
     single_line: bool = False,
     subject_max: int | None = None,
 ) -> str:
-    """OpenAI GPT 모델을 호출하여 커밋 메시지를 생성합니다."""
+    """Generate a commit message using an OpenAI GPT model."""
 
     chosen_model: str = _resolve_model(model=model)
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY 환경 변수가 필요합니다.")
+        raise RuntimeError("The OPENAI_API_KEY environment variable is required.")
 
     client = OpenAI(api_key=api_key)
 
     _combined_prompt, user_messages = _build_user_messages(diff=diff, hint=hint)
 
-    # Chat Completions API를 사용해 한 번의 응답을 생성 (hint와 diff를 별도 user 메시지로 전송)
+    # Use Chat Completions API to generate a single response (send hint and diff as separate user messages)
     all_messages: list[dict[str, str]] = [
         _system_message(single_line=single_line, subject_max=subject_max),
         *user_messages,
@@ -176,7 +167,7 @@ def generate_commit_message(
 
     text: str = (resp.choices[0].message.content or "").strip()
     if not text:
-        raise RuntimeError("빈 커밋 메시지가 생성되었습니다.")
+        raise RuntimeError("An empty commit message was generated.")
     return text
 
 
@@ -188,18 +179,18 @@ def generate_commit_message_with_info(
     single_line: bool = False,
     subject_max: int | None = None,
 ) -> CommitMessageResult:
-    """OpenAI GPT 호출 결과와 디버그 정보를 함께 반환합니다.
+    """Return the OpenAI GPT call result together with debugging information.
 
     Returns
     -------
     CommitMessageResult
-        생성된 메시지와 토큰 사용량, 프롬프트/응답 텍스트.
+        The generated message, token usage, and prompt/response text.
     """
 
     chosen_model: str = _resolve_model(model=model)
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY 환경 변수가 필요합니다.")
+        raise RuntimeError("The OPENAI_API_KEY environment variable is required.")
 
     client = OpenAI(api_key=api_key)
     combined_prompt, user_messages = _build_user_messages(diff=diff, hint=hint)
@@ -216,7 +207,7 @@ def generate_commit_message_with_info(
 
     response_text: str = (resp.choices[0].message.content or "").strip()
     if not response_text:
-        raise RuntimeError("빈 커밋 메시지가 생성되었습니다.")
+        raise RuntimeError("An empty commit message was generated.")
 
     response_id: str | None = getattr(resp, "id", None)
     usage = getattr(resp, "usage", None)

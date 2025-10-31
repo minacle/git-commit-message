@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-"""Git 관련 헬퍼 함수들.
+"""Git-related helper functions.
 
-레포 루트 탐색, 스테이징된 변경사항 추출, 메시지로 커밋 생성 등을 제공합니다.
+Provides repository root discovery, extraction of staged changes, and
+creating commits from a message.
 """
 
 from pathlib import Path
@@ -13,17 +14,17 @@ def get_repo_root(
     *,
     cwd: Path | None = None,
 ) -> Path:
-    """현재 작업 디렉토리에서 레포지토리 루트를 찾습니다.
+    """Find the repository root from the current working directory.
 
     Parameters
     ----------
     cwd
-        탐색 시작 디렉토리. 기본값은 현재 작업 디렉토리.
+        Starting directory for the search. Defaults to the current working directory.
 
     Returns
     -------
     Path
-        레포지토리 루트 경로.
+        The repository root path.
     """
 
     start: Path = cwd or Path.cwd()
@@ -37,7 +38,7 @@ def get_repo_root(
             cwd=str(start),
         )
     except subprocess.CalledProcessError as exc:  # noqa: TRY003
-        raise RuntimeError("Git 레포지토리가 아닙니다.") from exc
+        raise RuntimeError("Not a Git repository.") from exc
 
     root = Path(out.decode().strip())
     return root
@@ -47,7 +48,7 @@ def has_staged_changes(
     *,
     cwd: Path,
 ) -> bool:
-    """스테이징된 변경사항 유무를 확인합니다."""
+    """Check whether there are staged changes."""
 
     try:
         subprocess.check_call(
@@ -63,7 +64,7 @@ def get_staged_diff(
     *,
     cwd: Path,
 ) -> str:
-    """스테이징된 변경사항을 diff 텍스트로 반환합니다."""
+    """Return the staged changes as diff text."""
 
     out: bytes = subprocess.check_output(
         [
@@ -85,21 +86,21 @@ def commit_with_message(
     edit: bool,
     cwd: Path,
 ) -> int:
-    """주어진 메시지로 커밋을 생성합니다.
+    """Create a commit with the given message.
 
     Parameters
     ----------
     message
-        커밋 메시지.
+        Commit message.
     edit
-        True면 편집기를 열어 수정하도록 `--edit` 플래그를 사용합니다.
+        If True, use the `--edit` flag to open an editor for amendments.
     cwd
-        Git 작업 디렉토리.
+        Git working directory.
 
     Returns
     -------
     int
-        하위 프로세스의 종료 코드.
+        The subprocess exit code.
     """
 
     cmd: list[str] = ["git", "commit", "-m", message]
@@ -109,5 +110,5 @@ def commit_with_message(
     try:
         completed = subprocess.run(cmd, cwd=str(cwd), check=False)
         return int(completed.returncode)
-    except OSError as exc:  # 예: 편집기 실행 실패 등
-        raise RuntimeError(f"git commit 실행 실패: {exc}") from exc
+    except OSError as exc:  # e.g., editor launch failure, etc.
+        raise RuntimeError(f"Failed to run 'git commit': {exc}") from exc

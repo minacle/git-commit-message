@@ -1,6 +1,6 @@
-"""CLI와 내부 유틸리티를 내보내는 public 패키지.
+"""Public package exporting the CLI and internal utilities.
 
-이 모듈은 코드스타일 가이드에 따라 공개 심볼만을 노출합니다.
+This module exposes only public symbols in accordance with the codestyle guide.
 """
 
 from ._cli import main
