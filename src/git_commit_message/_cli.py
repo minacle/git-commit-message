@@ -62,6 +62,16 @@ def _build_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
+        "--language",
+        dest="language",
+        default=None,
+        help=(
+            "Target language/locale IETF tag for the output (default: en-GB). "
+            "You may also set GIT_COMMIT_MESSAGE_LANGUAGE or OPENAI_LANGUAGE."
+        ),
+    )
+
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Print the request/response and token usage.",
@@ -121,6 +131,7 @@ def _run(
                 model=args.model,
                 single_line=getattr(args, "one_line", False),
                 subject_max=getattr(args, "max_length", None),
+                language=getattr(args, "language", None),
             )
             message = result.message
         else:
@@ -130,6 +141,7 @@ def _run(
                 model=args.model,
                 single_line=getattr(args, "one_line", False),
                 subject_max=getattr(args, "max_length", None),
+                language=getattr(args, "language", None),
             )
     except Exception as exc:  # noqa: BLE001 - to preserve standard output messaging
         print(f"Failed to generate commit message: {exc}", file=sys.stderr)
