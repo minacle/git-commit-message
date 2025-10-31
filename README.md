@@ -2,6 +2,36 @@
 
 Staged changes -> GPT commit message generator.
 
+## Install (PyPI)
+
+Install the latest released version from PyPI:
+
+```fish
+# User environment (recommended)
+python -m pip install --user git-commit-message
+
+# Or system/virtualenv as appropriate
+python -m pip install git-commit-message
+
+# Or with pipx for isolated CLI installs
+pipx install git-commit-message
+
+# Upgrade to the newest version
+python -m pip install --upgrade git-commit-message
+```
+
+Quick check:
+
+```fish
+git-commit-message --help
+```
+
+Set your API key (fish):
+
+```fish
+set -x OPENAI_API_KEY "sk-..."
+```
+
 ## Install (editable)
 
 ```fish
