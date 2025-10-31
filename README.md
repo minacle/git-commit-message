@@ -35,7 +35,26 @@ git-commit-message --one-line --max-length 50 "optional context"
 git-commit-message --commit --edit "refactor parser for speed"
 ```
 
+- Select output language/locale (default: en-GB):
+
+```fish
+# American English
+git-commit-message --language en-US "optional context"
+
+# Korean
+git-commit-message --language ko-KR
+
+# Japanese
+git-commit-message --language ja-JP
+```
+
+Notes:
+
+- The model is instructed to write using the selected language/locale.
+- In multi-line mode, the only allowed label ("Rationale:") is also translated into the target language.
+
 Environment:
 
 - `OPENAI_API_KEY`: required
 - `GIT_COMMIT_MESSAGE_MODEL` or `OPENAI_MODEL`: optional (default: `gpt-5-mini`)
+- `GIT_COMMIT_MESSAGE_LANGUAGE` or `OPENAI_LANGUAGE`: optional (default: `en-GB`)
