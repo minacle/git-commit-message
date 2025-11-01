@@ -2,6 +2,8 @@
 
 Staged changes -> GPT commit message generator.
 
+[![asciicast](https://asciinema.org/a/jk0phFqNnc5vaCiIZEYBwZOyN.svg)](https://asciinema.org/a/jk0phFqNnc5vaCiIZEYBwZOyN)
+
 ## Install (PyPI)
 
 Install the latest released version from PyPI:
