@@ -87,7 +87,7 @@ Environment:
 
 - `OPENAI_API_KEY`: required
 - `GIT_COMMIT_MESSAGE_MODEL` or `OPENAI_MODEL`: optional (default: `gpt-5-mini`)
-- `GIT_COMMIT_MESSAGE_LANGUAGE` or `OPENAI_LANGUAGE`: optional (default: `en-GB`)
+- `GIT_COMMIT_MESSAGE_LANGUAGE`: optional (default: `en-GB`)
 
 ## AI‑generated code notice
 

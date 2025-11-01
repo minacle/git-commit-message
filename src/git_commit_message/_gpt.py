@@ -131,7 +131,6 @@ def _resolve_language(
     return (
         language
         or os.environ.get("GIT_COMMIT_MESSAGE_LANGUAGE")
-        or os.environ.get("OPENAI_LANGUAGE")
         or _DEFAULT_LANGUAGE
     )
 

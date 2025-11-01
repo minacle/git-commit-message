@@ -67,7 +67,7 @@ def _build_parser() -> ArgumentParser:
         default=None,
         help=(
             "Target language/locale IETF tag for the output (default: en-GB). "
-            "You may also set GIT_COMMIT_MESSAGE_LANGUAGE or OPENAI_LANGUAGE."
+            "You may also set GIT_COMMIT_MESSAGE_LANGUAGE."
         ),
     )
 
