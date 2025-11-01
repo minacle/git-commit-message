@@ -1,11 +1,25 @@
 [project]
 name = "git-commit-message"
-version = "0.4.0"
+version = "0.5.0"
 description = "Generate Git commit messages from staged changes using OpenAI GPT"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
 	"openai>=2.6.1",
+]
+maintainers = [{ name = "Mina Her", email = "minacle@live.com" }]
+license = { file = "UNLICENSE" }
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Environment :: Console",
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: The Unlicense (Unlicense)",
+	"Operating System :: OS Independent",
+	"Programming Language :: Python",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3 :: Only",
+	"Programming Language :: Python :: 3.13",
+	"Topic :: Software Development :: Version Control :: Git",
 ]
 
 [project.scripts]
@@ -18,6 +32,11 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 package-dir = {"" = "src"}
 packages = ["git_commit_message"]
+
+[project.urls]
+Homepage = "https://github.com/minacle/git-commit-message"
+Repository = "https://github.com/minacle/git-commit-message"
+Issues = "https://github.com/minacle/git-commit-message/issues"
 
 [tool.pyright]
 # Ensure Pyright/Pylance resolves project imports and uses correct Python version
