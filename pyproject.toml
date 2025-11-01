@@ -18,3 +18,17 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 package-dir = {"" = "src"}
 packages = ["git_commit_message"]
+
+[tool.pyright]
+# Ensure Pyright/Pylance resolves project imports and uses correct Python version
+pythonVersion = "3.13"
+extraPaths = ["src"]
+typeCheckingMode = "basic"
+
+# So that SDK dynamic types or untyped third-party libs don't flood with "unknown" diagnostics
+reportUnknownParameterType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownCalleeType = "none"

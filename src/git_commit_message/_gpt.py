@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-"""Generate Git commit messages by calling an OpenAI GPT model."""
+from openai.types.responses import ResponseInputParam
+
+"""Generate Git commit messages by calling an OpenAI GPT model.
+
+Migrated to use OpenAI Responses API (client.responses.create).
+"""
 
 import os
-from typing import Final, Any, cast
+from typing import Final
 from openai import OpenAI
 
 
@@ -56,14 +61,14 @@ def _build_system_prompt(
     )
 
 
-def _system_message(
+def _instructions(
     *,
     single_line: bool,
     subject_max: int | None,
     language: str,
-) -> dict[str, str]:
-    """Create the system message dictionary."""
-    return {"role": "system", "content": _build_system_prompt(single_line=single_line, subject_max=subject_max, language=language)}
+) -> str:
+    """Create the system/developer instructions string for the Responses API."""
+    return _build_system_prompt(single_line=single_line, subject_max=subject_max, language=language)
 
 
 class CommitMessageResult:
@@ -135,18 +140,17 @@ def _resolve_language(
     )
 
 
-def _build_user_messages(
+def _build_responses_input(
     *,
     diff: str,
     hint: str | None,
-) -> tuple[str, list[dict[str, str]]]:
-    """Compose user messages, separating auxiliary context and diff.
+) -> ResponseInputParam:
+    """Compose Responses API input items, separating auxiliary context and diff.
 
     Returns
     -------
-    tuple[str, list[dict[str, str]]]
-        The first element is the combined string for debugging output; the
-        second is the list of user messages to send to the Chat Completions API.
+    ResponseInputParam
+        The list of input items to send to the Responses API.
     """
 
     hint_content: str | None = (
@@ -154,15 +158,35 @@ def _build_user_messages(
     )
     diff_content: str = f"# Changes (diff)\n{diff}"
 
-    messages: list[dict[str, str]] = []
+    input_items: ResponseInputParam = []
     if hint_content:
-        messages.append({"role": "user", "content": hint_content})
-    messages.append({"role": "user", "content": diff_content})
-
-    combined_prompt: str = "\n\n".join(
-        [part for part in (hint_content, diff_content) if part is not None]
+        input_items.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": hint_content},
+                ],
+            }
+        )
+    input_items.append(
+        {
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": diff_content},
+            ],
+        }
     )
-    return combined_prompt, messages
+
+    return input_items
+
+
+def _build_combined_prompt(*, diff: str, hint: str | None) -> str:
+    """Compose a combined string of hint and diff for debug/info output."""
+    hint_content: str | None = (
+        f"# Auxiliary context (user-provided)\n{hint}" if hint else None
+    )
+    diff_content: str = f"# Changes (diff)\n{diff}"
+    return "\n\n".join([part for part in (hint_content, diff_content) if part is not None])
 
 
 def generate_commit_message(
@@ -184,20 +208,17 @@ def generate_commit_message(
 
     client = OpenAI(api_key=api_key)
 
-    _combined_prompt, user_messages = _build_user_messages(diff=diff, hint=hint)
+    input_items = _build_responses_input(diff=diff, hint=hint)
 
-    # Use Chat Completions API to generate a single response (send hint and diff as separate user messages)
-    all_messages: list[dict[str, str]] = [
-        _system_message(single_line=single_line, subject_max=subject_max, language=chosen_language),
-        *user_messages,
-    ]
-
-    resp = client.chat.completions.create(
+    # Use Responses API to generate a single response (send hint and diff as separate user inputs)
+    resp = client.responses.create(
         model=chosen_model,
-        messages=cast(Any, all_messages),
+        instructions=_instructions(single_line=single_line, subject_max=subject_max, language=chosen_language),
+        input=input_items,
     )
 
-    text: str = (resp.choices[0].message.content or "").strip()
+    # Prefer SDK convenience aggregate text if available
+    text: str = (resp.output_text or "").strip()
     if not text:
         raise RuntimeError("An empty commit message was generated.")
     return text
@@ -227,31 +248,29 @@ def generate_commit_message_with_info(
         raise RuntimeError("The OPENAI_API_KEY environment variable is required.")
 
     client = OpenAI(api_key=api_key)
-    combined_prompt, user_messages = _build_user_messages(diff=diff, hint=hint)
+    combined_prompt = _build_combined_prompt(diff=diff, hint=hint)
+    input_items = _build_responses_input(diff=diff, hint=hint)
 
-    all_messages = [
-        _system_message(single_line=single_line, subject_max=subject_max, language=chosen_language),
-        *user_messages,
-    ]
-
-    resp = client.chat.completions.create(
+    resp = client.responses.create(
         model=chosen_model,
-        messages=cast(Any, all_messages),
+        instructions=_instructions(single_line=single_line, subject_max=subject_max, language=chosen_language),
+        input=input_items,
     )
 
-    response_text: str = (resp.choices[0].message.content or "").strip()
+    response_text: str = (resp.output_text or "").strip()
     if not response_text:
         raise RuntimeError("An empty commit message was generated.")
 
-    response_id: str | None = getattr(resp, "id", None)
-    usage = getattr(resp, "usage", None)
+    response_id: str | None = resp.id
+    usage = resp.usage
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     total_tokens: int | None = None
     if usage is not None:
-        prompt_tokens = getattr(usage, "prompt_tokens", None)
-        completion_tokens = getattr(usage, "completion_tokens", None)
-        total_tokens = getattr(usage, "total_tokens", None)
+        # Responses API exposes input/output/total token fields.
+        total_tokens = usage.total_tokens
+        prompt_tokens = usage.input_tokens
+        completion_tokens = usage.output_tokens
 
     return CommitMessageResult(
         message=response_text,
