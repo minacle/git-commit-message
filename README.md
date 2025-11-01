@@ -8,7 +8,7 @@ Staged changes -> GPT commit message generator.
 
 Install the latest released version from PyPI:
 
-```fish
+```sh
 # User environment (recommended)
 python -m pip install --user git-commit-message
 
@@ -24,11 +24,17 @@ python -m pip install --upgrade git-commit-message
 
 Quick check:
 
-```fish
+```sh
 git-commit-message --help
 ```
 
-Set your API key (fish):
+Set your API key (POSIX sh):
+
+```sh
+export OPENAI_API_KEY="sk-..."
+```
+
+Note (fish): In fish, set it as follows.
 
 ```fish
 set -x OPENAI_API_KEY "sk-..."
@@ -36,7 +42,7 @@ set -x OPENAI_API_KEY "sk-..."
 
 ## Install (editable)
 
-```fish
+```sh
 python -m pip install -e .
 ```
 
@@ -44,32 +50,32 @@ python -m pip install -e .
 
 - Print commit message only:
 
-```fish
+```sh
 git add -A
 git-commit-message "optional extra context about the change"
 ```
 
 - Force single-line subject only:
 
-```fish
+```sh
 git-commit-message --one-line "optional context"
 ```
 
 - Limit subject length (default 72):
 
-```fish
+```sh
 git-commit-message --one-line --max-length 50 "optional context"
 ```
 
 - Commit immediately with editor:
 
-```fish
+```sh
 git-commit-message --commit --edit "refactor parser for speed"
 ```
 
 - Select output language/locale (default: en-GB):
 
-```fish
+```sh
 # American English
 git-commit-message --language en-US "optional context"
 
