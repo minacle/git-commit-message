@@ -1,6 +1,6 @@
 # git-commit-message
 
-Staged changes -> GPT commit message generator.
+Staged changes → LLM commit message generator (OpenAI or Google Gemini).
 
 [![asciicast](https://asciinema.org/a/jk0phFqNnc5vaCiIZEYBwZOyN.svg)](https://asciinema.org/a/jk0phFqNnc5vaCiIZEYBwZOyN)
 
@@ -31,13 +31,21 @@ git-commit-message --help
 Set your API key (POSIX sh):
 
 ```sh
+# OpenAI
 export OPENAI_API_KEY="sk-..."
+
+# Google Gemini
+export GOOGLE_API_KEY="AIza..."
 ```
 
 Note (fish): In fish, set it as follows.
 
 ```fish
+# OpenAI
 set -x OPENAI_API_KEY "sk-..."
+
+# Google Gemini
+set -x GOOGLE_API_KEY "AIza..."
 ```
 
 ## Install (editable)
@@ -73,6 +81,17 @@ git-commit-message --one-line --max-length 50 "optional context"
 git-commit-message --commit --edit "refactor parser for speed"
 ```
 
+- Select provider (OpenAI or Google Gemini):
+
+```sh
+# Explicit provider
+git-commit-message --provider openai "optional context"
+git-commit-message --provider google "optional context"
+
+# Provider can be inferred from the model name
+git-commit-message --model gemini-2.5-flash "optional context"
+```
+
 - Select output language/locale (default: en-GB):
 
 ```sh
@@ -93,9 +112,22 @@ Notes:
 
 Environment:
 
-- `OPENAI_API_KEY`: required
-- `GIT_COMMIT_MESSAGE_MODEL` or `OPENAI_MODEL`: optional (default: `gpt-5-mini`)
-- `GIT_COMMIT_MESSAGE_LANGUAGE`: optional (default: `en-GB`)
+- API keys (set one depending on provider)
+	- `OPENAI_API_KEY`
+	- `GOOGLE_API_KEY`
+- Model selection (all are optional)
+	- Generic: `GIT_COMMIT_MESSAGE_MODEL`
+	- OpenAI-specific: `OPENAI_MODEL`
+	- Gemini-specific: `GIT_COMMIT_MESSAGE_GEMINI_MODEL` or `GOOGLE_GENAI_MODEL`
+- Provider selection (optional)
+	- CLI: `--provider openai|google`
+	- Env: `GIT_COMMIT_MESSAGE_PROVIDER=openai|google`
+	- If omitted, the provider defaults to OpenAI unless the model name contains `gemini`.
+- Defaults
+	- OpenAI model: `gpt-5-mini`
+	- Gemini model: `gemini-2.5-flash`
+- Language
+	- `GIT_COMMIT_MESSAGE_LANGUAGE` (default: `en-GB`)
 
 ## AI‑generated code notice
 

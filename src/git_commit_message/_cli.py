@@ -12,11 +12,11 @@ import sys
 from typing import Final
 
 from ._git import commit_with_message, get_repo_root, get_staged_diff, has_staged_changes
-from ._gpt import (
+from ._llm import (
     generate_commit_message,
     generate_commit_message_with_info,
-    CommitMessageResult,
 )
+from ._llm_common import CommitMessageResult
 
 
 def _build_parser() -> ArgumentParser:
@@ -58,6 +58,16 @@ def _build_parser() -> ArgumentParser:
         default=None,
         help=(
             "OpenAI model name to use. If unspecified, uses the environment variables (GIT_COMMIT_MESSAGE_MODEL, OPENAI_MODEL) or 'gpt-5-mini'."
+        ),
+    )
+
+    parser.add_argument(
+        "--provider",
+        choices=("openai", "google"),
+        default=None,
+        help=(
+            "LLM provider to use: 'openai' or 'google'. If omitted, defaults to OpenAI unless the model name contains 'gemini'.\n"
+            "You can also set GIT_COMMIT_MESSAGE_PROVIDER=openai|google."
         ),
     )
 
@@ -129,6 +139,7 @@ def _run(
                 diff=diff_text,
                 hint=hint,
                 model=args.model,
+                provider=getattr(args, "provider", None),
                 single_line=getattr(args, "one_line", False),
                 subject_max=getattr(args, "max_length", None),
                 language=getattr(args, "language", None),
@@ -139,6 +150,7 @@ def _run(
                 diff=diff_text,
                 hint=hint,
                 model=args.model,
+                provider=getattr(args, "provider", None),
                 single_line=getattr(args, "one_line", False),
                 subject_max=getattr(args, "max_length", None),
                 language=getattr(args, "language", None),
@@ -160,7 +172,7 @@ def _run(
     if not args.commit:
         if args.debug and result is not None:
             # Print debug information
-            print("==== OpenAI Usage ====")
+            print("==== LLM Usage ====")
             print(f"model: {result.model}")
             print(f"response_id: {getattr(result, 'response_id', '(n/a)')}")
             if result.total_tokens is not None:
@@ -181,7 +193,7 @@ def _run(
 
     if args.debug and result is not None:
         # Also print debug info before commit
-        print("==== OpenAI Usage ====")
+        print("==== LLM Usage ====")
         print(f"model: {result.model}")
         print(f"response_id: {getattr(result, 'response_id', '(n/a)')}")
         if result.total_tokens is not None:
