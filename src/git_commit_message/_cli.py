@@ -125,7 +125,8 @@ def _build_parser() -> ArgumentParser:
         help=(
             "LLM provider to use (default: openai). "
             "You may also set GIT_COMMIT_MESSAGE_PROVIDER. "
-            "The CLI flag overrides the environment variable."
+            "The CLI flag overrides the environment variable. "
+            "Supported providers: openai, google, ollama, llamacpp."
         ),
     )
 
@@ -133,7 +134,8 @@ def _build_parser() -> ArgumentParser:
         "--model",
         default=None,
         help=(
-            "Model name to use. If unspecified, uses GIT_COMMIT_MESSAGE_MODEL or a provider-specific default (openai: gpt-5-mini; google: gemini-2.5-flash; ollama: gpt-oss:20b)."
+            "Model name to use. If unspecified, uses GIT_COMMIT_MESSAGE_MODEL or a provider-specific default "
+            "(openai: gpt-5-mini; google: gemini-2.5-flash; ollama: gpt-oss:20b; llamacpp: default)."
         ),
     )
 
@@ -185,8 +187,9 @@ def _build_parser() -> ArgumentParser:
         dest="host",
         default=None,
         help=(
-            "Host URL for API providers like Ollama (default: http://localhost:11434). "
-            "You may also set OLLAMA_HOST for Ollama."
+            "Host URL for API providers like Ollama or llama.cpp "
+            "(default: http://localhost:11434 for Ollama, http://localhost:8080 for llama.cpp). "
+            "You may also set OLLAMA_HOST for Ollama or LLAMACPP_HOST for llama.cpp."
         ),
     )
 

@@ -19,6 +19,7 @@ _DEFAULT_PROVIDER: Final[str] = "openai"
 _DEFAULT_MODEL_OPENAI: Final[str] = "gpt-5-mini"
 _DEFAULT_MODEL_GOOGLE: Final[str] = "gemini-2.5-flash"
 _DEFAULT_MODEL_OLLAMA: Final[str] = "gpt-oss:20b"
+_DEFAULT_MODEL_LLAMACPP: Final[str] = "default"
 _DEFAULT_LANGUAGE: Final[str] = "en-GB"
 
 
@@ -155,6 +156,9 @@ def _resolve_model(
     elif provider_name == "ollama":
         default_model = _DEFAULT_MODEL_OLLAMA
         provider_model = environ.get("OLLAMA_MODEL")
+    elif provider_name == "llamacpp":
+        default_model = _DEFAULT_MODEL_LLAMACPP
+        provider_model = environ.get("LLAMACPP_MODEL")
     else:
         default_model = _DEFAULT_MODEL_OPENAI
         provider_model = environ.get("OPENAI_MODEL")
@@ -195,8 +199,14 @@ def get_provider(
 
         return OllamaProvider(host=host)
 
+    if name == "llamacpp":
+        # Local import to avoid import cycles: providers may import shared types from this module.
+        from ._llamacpp import LlamaCppProvider
+
+        return LlamaCppProvider(host=host)
+
     raise UnsupportedProviderError(
-        f"Unsupported provider: {name}. Supported providers: openai, google, ollama"
+        f"Unsupported provider: {name}. Supported providers: openai, google, ollama, llamacpp"
     )
 
 

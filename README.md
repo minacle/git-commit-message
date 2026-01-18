@@ -1,6 +1,6 @@
 # git-commit-message
 
-Generate a commit message from your staged changes using OpenAI, Google Gemini, or Ollama.
+Generate a commit message from your staged changes using OpenAI, Google Gemini, Ollama, or llama.cpp.
 
 [![asciicast](https://asciinema.org/a/jk0phFqNnc5vaCiIZEYBwZOyN.svg)](https://asciinema.org/a/jk0phFqNnc5vaCiIZEYBwZOyN)
 
@@ -69,6 +69,23 @@ export GIT_COMMIT_MESSAGE_PROVIDER=ollama
 export OLLAMA_MODEL=mistral
 ```
 
+### llama.cpp (local models)
+
+1. Build and run llama.cpp server with your model:
+
+```sh
+llama-server -hf ggml-org/gpt-oss-20b-GGUF --host 0.0.0.0 --port 8080
+```
+
+2. The server runs on `http://localhost:8080` by default.
+
+Optional: set defaults:
+
+```sh
+export GIT_COMMIT_MESSAGE_PROVIDER=llamacpp
+export LLAMACPP_HOST=http://localhost:8080
+```
+
 Note (fish):
 
 ```fish
@@ -107,6 +124,9 @@ git-commit-message --provider google
 
 # Ollama
 git-commit-message --provider ollama
+
+# llama.cpp
+git-commit-message --provider llamacpp
 ```
 
 Commit immediately (optionally open editor):
@@ -168,10 +188,16 @@ Configure Ollama host (if running on a different machine):
 git-commit-message --provider ollama --host http://192.168.1.100:11434
 ```
 
+Configure llama.cpp host:
+
+```sh
+git-commit-message --provider llamacpp --host http://192.168.1.100:8080
+```
+
 ## Options
 
-- `--provider {openai,google,ollama}`: provider to use (default: `openai`)
-- `--model MODEL`: model override (provider-specific)
+- `--provider {openai,google,ollama,llamacpp}`: provider to use (default: `openai`)
+- `--model MODEL`: model override (provider-specific; ignored for llama.cpp)
 - `--language TAG`: output language/locale (default: `en-GB`)
 - `--one-line`: output subject only
 - `--max-length N`: max subject length (default: 72)
@@ -180,7 +206,7 @@ git-commit-message --provider ollama --host http://192.168.1.100:11434
 - `--commit`: run `git commit -m <message>`
 - `--amend`: generate a message suitable for amending the previous commit (diff is from the amended commit's parent to the staged index; if nothing is staged, this effectively becomes the diff introduced by `HEAD`)
 - `--edit`: with `--commit`, open editor for final message
-- `--host URL`: host URL for providers like Ollama (default: `http://localhost:11434`)
+- `--host URL`: host URL for providers like Ollama or llama.cpp (default: `http://localhost:11434` for Ollama, `http://localhost:8080` for llama.cpp)
 
 ## Environment variables
 
@@ -196,6 +222,7 @@ Optional:
 - `OPENAI_MODEL`: OpenAI-only model override (used if `--model`/`GIT_COMMIT_MESSAGE_MODEL` are not set)
 - `OLLAMA_MODEL`: Ollama-only model override (used if `--model`/`GIT_COMMIT_MESSAGE_MODEL` are not set)
 - `OLLAMA_HOST`: Ollama server URL (default: `http://localhost:11434`)
+- `LLAMACPP_HOST`: llama.cpp server URL (default: `http://localhost:8080`)
 - `GIT_COMMIT_MESSAGE_LANGUAGE`: default language/locale (default: `en-GB`)
 - `GIT_COMMIT_MESSAGE_CHUNK_TOKENS`: default chunk token budget (default: `0`)
 
@@ -204,6 +231,7 @@ Default models (if not overridden):
 - OpenAI: `gpt-5-mini`
 - Google: `gemini-2.5-flash`
 - Ollama: `gpt-oss:20b`
+- llama.cpp: uses pre-loaded model (model parameter is ignored)
 
 ## AI-generated code notice
 
