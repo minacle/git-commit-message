@@ -271,7 +271,9 @@ def _build_parser() -> ArgumentParser:
             "Add Co-authored-by trailer(s) to the generated message. "
             "Repeat for multiple co-authors. "
             "Use 'Name <email@example.com>' or an alias keyword "
-            f"({_co_author_alias_keywords_text()})."
+            f"({_co_author_alias_keywords_text()}). "
+            "When used with --one-line, the subject line remains single-line and these "
+            "trailers are appended on separate lines (i.e., the overall output is multi-line)."
         ),
     )
 
