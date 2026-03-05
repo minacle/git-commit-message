@@ -9,6 +9,7 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 from os import environ
 from pathlib import Path
+from re import Pattern, compile
 from sys import exit as sys_exit
 from sys import stderr
 from typing import Final
@@ -43,6 +44,7 @@ class CliArgs(Namespace):
         "max_length",
         "chunk_tokens",
         "host",
+        "co_authors",
     )
 
     def __init__(
@@ -61,6 +63,73 @@ class CliArgs(Namespace):
         self.max_length: int | None = None
         self.chunk_tokens: int | None = None
         self.host: str | None = None
+        self.co_authors: list[str] | None = None
+
+
+_CO_AUTHOR_LINE_RE: Final[Pattern[str]] = compile(
+    r"^\s*([^<>\n]+?)\s*<([^<>\s\n]+@[^<>\s\n]+)>\s*$"
+)
+_CO_AUTHOR_ALIASES: Final[dict[str, str]] = {
+    "copilot": "Copilot <copilot@github.com>",
+}
+
+
+def _co_author_alias_keywords_text() -> str:
+    """Return a readable list of accepted co-author alias keywords."""
+
+    keywords: list[str] = sorted(_CO_AUTHOR_ALIASES.keys())
+    return ", ".join(f"'{keyword}'" for keyword in keywords)
+
+
+def _normalize_co_author(
+    raw: str,
+    /,
+) -> str:
+    """Normalize one co-author input into ``Name <email>`` form."""
+
+    value: str = raw.strip()
+    if not value:
+        raise ValueError("Co-author cannot be empty.")
+
+    alias: str | None = _CO_AUTHOR_ALIASES.get(value.lower())
+    if alias is not None:
+        return alias
+
+    match = _CO_AUTHOR_LINE_RE.match(value)
+    if match is None:
+        raise ValueError(
+            "Invalid co-author format: use 'Name <email@example.com>' "
+            f"or an alias keyword ({_co_author_alias_keywords_text()})."
+        )
+
+    name: str = match.group(1).strip()
+    email: str = match.group(2).strip()
+    return f"{name} <{email}>"
+
+
+def _append_co_author_footers(
+    message: str,
+    co_authors: list[str],
+    /,
+) -> str:
+    """Append Git co-author trailers to a commit message."""
+
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for raw in co_authors:
+        author = _normalize_co_author(raw)
+        key = author.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(author)
+
+    if not normalized:
+        return message
+
+    base: str = message.rstrip()
+    footer_lines: list[str] = [f"Co-authored-by: {author}" for author in normalized]
+    return f"{base}\n\n" + "\n".join(footer_lines)
 
 
 def _env_chunk_tokens_default() -> int | None:
@@ -193,6 +262,19 @@ def _build_parser() -> ArgumentParser:
         ),
     )
 
+    parser.add_argument(
+        "--co-author",
+        dest="co_authors",
+        action="append",
+        default=None,
+        help=(
+            "Add Co-authored-by trailer(s) to the generated message. "
+            "Repeat for multiple co-authors. "
+            "Use 'Name <email@example.com>' or an alias keyword "
+            f"({_co_author_alias_keywords_text()})."
+        ),
+    )
+
     return parser
 
 
@@ -285,6 +367,13 @@ def _run(
     if not message.strip():
         print("Failed to generate commit message: generated message is empty.", file=stderr)
         return 3
+
+    if args.co_authors:
+        try:
+            message = _append_co_author_footers(message, args.co_authors)
+        except ValueError as exc:
+            print(str(exc), file=stderr)
+            return 2
 
     if not args.commit:
         if args.debug and result is not None:
