@@ -107,10 +107,13 @@ git add -A
 git-commit-message "optional extra context about the change"
 ```
 
-Generate a single-line subject only:
+Generate a single-line subject only (when no trailers are appended):
 
 ```sh
 git-commit-message --one-line "optional context"
+
+# with trailers, output is subject plus trailer lines
+git-commit-message --one-line --co-author 'John Doe <john.doe@example.com>'
 ```
 
 Select provider:
@@ -204,7 +207,7 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 - `--provider {openai,google,ollama,llamacpp}`: provider to use (default: `openai`)
 - `--model MODEL`: model override (provider-specific; ignored for llama.cpp)
 - `--language TAG`: output language/locale (default: `en-GB`)
-- `--one-line`: output subject only
+- `--one-line`: output subject only when no trailers are appended; with `--co-author`, output is a single-line subject plus `Co-authored-by:` trailer lines
 - `--max-length N`: max subject length (default: 72)
 - `--chunk-tokens N`: token budget per diff chunk (`0` = single summary pass, `-1` disables summarisation)
 - `--debug`: print request/response details
@@ -212,7 +215,7 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 - `--amend`: generate a message suitable for amending the previous commit (diff is from the amended commit's parent to the staged index; if nothing is staged, this effectively becomes the diff introduced by `HEAD`)
 - `--edit`: with `--commit`, open editor for final message
 - `--host URL`: host URL for providers like Ollama or llama.cpp (default: `http://localhost:11434` for Ollama, `http://localhost:8080` for llama.cpp)
-- `--co-author VALUE`: append `Co-authored-by:` trailer(s). Repeat to add multiple values. Accepted forms: `Name <email@example.com>` or `Copilot`.
+- `--co-author VALUE`: append `Co-authored-by:` trailer(s). Repeat to add multiple values. Accepted forms: `Name <email@example.com>` or `copilot` (alias, case-insensitive).
 
 ## Environment variables
 
