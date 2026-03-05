@@ -67,7 +67,7 @@ class CliArgs(Namespace):
 
 
 _CO_AUTHOR_LINE_RE: Final[Pattern[str]] = compile(
-    r"^\s*([^<>\n]+?)\s*<([^<>\s\n]+@[^<>\s\n]+)>\s*$"
+    r"^\s*([^<>\s\n][^<>\n]*?)\s*<([^<>\s\n]+@[^<>\s\n]+)>\s*$"
 )
 _CO_AUTHOR_ALIASES: Final[dict[str, str]] = {
     "copilot": "Copilot <copilot@github.com>",
