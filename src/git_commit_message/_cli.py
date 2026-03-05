@@ -281,6 +281,11 @@ def _run(
         else:
             message = ""
 
+    # Defensive check: one-line normalization can result in an empty message.
+    if not message.strip():
+        print("Failed to generate commit message: generated message is empty.", file=stderr)
+        return 3
+
     if not args.commit:
         if args.debug and result is not None:
             # Print debug information
