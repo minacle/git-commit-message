@@ -110,10 +110,26 @@ def _normalize_co_author(
 
 def _append_co_author_footers(
     message: str,
-    co_authors: list[str],
+    normalized_co_authors: list[str],
     /,
 ) -> str:
     """Append Git co-author trailers to a commit message."""
+
+    if not normalized_co_authors:
+        return message
+
+    base: str = message.rstrip()
+    footer_lines: list[str] = [
+        f"Co-authored-by: {author}" for author in normalized_co_authors
+    ]
+    return f"{base}\n\n" + "\n".join(footer_lines)
+
+
+def _normalize_co_authors(
+    co_authors: list[str],
+    /,
+) -> list[str]:
+    """Normalize and deduplicate co-author values in insertion order."""
 
     seen: set[str] = set()
     normalized: list[str] = []
@@ -124,13 +140,7 @@ def _append_co_author_footers(
             continue
         seen.add(key)
         normalized.append(author)
-
-    if not normalized:
-        return message
-
-    base: str = message.rstrip()
-    footer_lines: list[str] = [f"Co-authored-by: {author}" for author in normalized]
-    return f"{base}\n\n" + "\n".join(footer_lines)
+    return normalized
 
 
 def _env_chunk_tokens_default() -> int | None:
@@ -322,6 +332,14 @@ def _run(
     if chunk_tokens is None:
         chunk_tokens = 0
 
+    normalized_co_authors: list[str] | None = None
+    if args.co_authors:
+        try:
+            normalized_co_authors = _normalize_co_authors(args.co_authors)
+        except ValueError as exc:
+            print(str(exc), file=stderr)
+            return 2
+
     result: CommitMessageResult | None = None
     try:
         if args.debug:
@@ -371,12 +389,8 @@ def _run(
         print("Failed to generate commit message: generated message is empty.", file=stderr)
         return 3
 
-    if args.co_authors:
-        try:
-            message = _append_co_author_footers(message, args.co_authors)
-        except ValueError as exc:
-            print(str(exc), file=stderr)
-            return 2
+    if normalized_co_authors:
+        message = _append_co_author_footers(message, normalized_co_authors)
 
     if not args.commit:
         if args.debug and result is not None:
