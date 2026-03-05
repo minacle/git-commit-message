@@ -9,7 +9,8 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 from os import environ
 from pathlib import Path
-from re import Pattern, compile
+import re
+from re import Pattern
 from sys import exit as sys_exit
 from sys import stderr
 from typing import Final
@@ -66,7 +67,7 @@ class CliArgs(Namespace):
         self.co_authors: list[str] | None = None
 
 
-_CO_AUTHOR_LINE_RE: Final[Pattern[str]] = compile(
+_CO_AUTHOR_LINE_RE: Final[Pattern[str]] = re.compile(
     r"^\s*([^<>\s\n][^<>\n]*?)\s*<([^<>\s\n]+@[^<>\s\n]+)>\s*$"
 )
 _CO_AUTHOR_ALIASES: Final[dict[str, str]] = {
