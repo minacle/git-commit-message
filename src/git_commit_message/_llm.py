@@ -254,6 +254,7 @@ def _build_system_prompt(
                 "Use one of these Conventional Commits subject forms: '<type>: <description>', '<type>(<scope>): <description>', '<type>!: <description>', or '<type>(<scope>)!: <description>'. "
                 "When a scope is present, it MUST be parenthesized and directly attached to the type with no spaces. "
                 "Represent breaking changes with '!' before ':' in the subject; do not output a BREAKING CHANGE footer. "
+                "Do NOT translate the Conventional prefix token ('<type>', optional '(<scope>)', optional '!'); translate only the description into the target language. "
             )
         else:
             conventional_rule = (
