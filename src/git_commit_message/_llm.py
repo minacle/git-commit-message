@@ -13,7 +13,12 @@ from __future__ import annotations
 from babel import Locale
 from typing import ClassVar, Protocol
 
-from ._config import resolve_language_tag, resolve_model_name, resolve_provider_name
+from ._config import (
+    resolve_language_tag,
+    resolve_model_name,
+    resolve_provider_name,
+    validate_provider_chunk_tokens,
+)
 
 
 class UnsupportedProviderError(RuntimeError):
@@ -488,6 +493,12 @@ def generate_commit_message(
     llm = get_provider(chosen_provider, host=host)
 
     normalized_chunk_tokens = 0 if chunk_tokens is None else chunk_tokens
+    provider_arg_error = validate_provider_chunk_tokens(
+        chosen_provider,
+        normalized_chunk_tokens,
+    )
+    if provider_arg_error is not None:
+        raise ValueError(provider_arg_error)
 
     if normalized_chunk_tokens != -1:
         hunks = _split_diff_into_hunks(diff)
@@ -545,6 +556,12 @@ def generate_commit_message_with_info(
     llm = get_provider(chosen_provider, host=host)
 
     normalized_chunk_tokens = 0 if chunk_tokens is None else chunk_tokens
+    provider_arg_error = validate_provider_chunk_tokens(
+        chosen_provider,
+        normalized_chunk_tokens,
+    )
+    if provider_arg_error is not None:
+        raise ValueError(provider_arg_error)
 
     response_id: str | None = None
 

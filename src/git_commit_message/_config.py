@@ -48,3 +48,18 @@ def resolve_language_tag(
     /,
 ) -> str:
     return language or environ.get("GIT_COMMIT_MESSAGE_LANGUAGE") or DEFAULT_LANGUAGE
+
+
+def validate_provider_chunk_tokens(
+    provider_name: str,
+    chunk_tokens: int,
+    /,
+) -> str | None:
+    if provider_name == "ollama" and chunk_tokens > 0:
+        return (
+            "'--chunk-tokens' with values >= 1 is not supported for provider 'ollama'. "
+            "Use '--chunk-tokens 0' (single summary pass) or '--chunk-tokens -1' "
+            "(disable summarisation)."
+        )
+
+    return None

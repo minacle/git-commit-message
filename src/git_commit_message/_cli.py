@@ -23,7 +23,7 @@ from ._git import (
     has_staged_changes,
     resolve_amend_base_ref,
 )
-from ._config import resolve_provider_name
+from ._config import resolve_provider_name, validate_provider_chunk_tokens
 from ._llm import (
     CommitMessageResult,
     UnsupportedProviderError,
@@ -156,23 +156,6 @@ def _env_chunk_tokens_default() -> int | None:
         return int(raw)
     except ValueError:
         return None
-
-
-def _validate_provider_specific_args(
-    provider_name: str,
-    chunk_tokens: int,
-    /,
-) -> str | None:
-    """Validate CLI args against provider capabilities."""
-
-    if provider_name == "ollama" and chunk_tokens > 0:
-        return (
-            "'--chunk-tokens' with values >= 1 is not supported for provider 'ollama'. "
-            "Use '--chunk-tokens 0' (single summary pass) or '--chunk-tokens -1' "
-            "(disable summarisation)."
-        )
-
-    return None
 
 
 def _build_parser() -> ArgumentParser:
@@ -345,7 +328,7 @@ def _run(
         chunk_tokens = 0
 
     provider_name: str = resolve_provider_name(args.provider)
-    provider_arg_error = _validate_provider_specific_args(provider_name, chunk_tokens)
+    provider_arg_error = validate_provider_chunk_tokens(provider_name, chunk_tokens)
     if provider_arg_error is not None:
         print(provider_arg_error, file=stderr)
         return 2
