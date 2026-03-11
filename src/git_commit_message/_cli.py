@@ -46,6 +46,7 @@ class CliArgs(Namespace):
         "one_line",
         "max_length",
         "chunk_tokens",
+        "diff_context",
         "host",
         "co_authors",
     )
@@ -66,6 +67,7 @@ class CliArgs(Namespace):
         self.one_line: bool = False
         self.max_length: int | None = None
         self.chunk_tokens: int | None = None
+        self.diff_context: int | None = None
         self.host: str | None = None
         self.co_authors: list[str] | None = None
 
@@ -156,6 +158,21 @@ def _env_chunk_tokens_default() -> int | None:
         return int(raw)
     except ValueError:
         return None
+
+
+def _env_diff_context_default() -> int | None:
+    """Return diff context default from env.
+
+    Raises
+    ------
+    ValueError
+        If the configured value is not an integer.
+    """
+
+    raw: str | None = environ.get("GIT_COMMIT_MESSAGE_DIFF_CONTEXT")
+    if raw is None:
+        return None
+    return int(raw)
 
 
 def _build_parser() -> ArgumentParser:
@@ -276,6 +293,18 @@ def _build_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
+        "--diff-context",
+        dest="diff_context",
+        type=int,
+        default=None,
+        help=(
+            "Number of context lines in unified diff output. "
+            "If omitted, uses GIT_COMMIT_MESSAGE_DIFF_CONTEXT when set "
+            "(default: Git default, usually 3)."
+        ),
+    )
+
+    parser.add_argument(
         "--host",
         dest="host",
         default=None,
@@ -327,6 +356,20 @@ def _run(
     if chunk_tokens is None:
         chunk_tokens = 0
 
+    diff_context: int | None = args.diff_context
+    if diff_context is None:
+        try:
+            diff_context = _env_diff_context_default()
+        except ValueError:
+            print(
+                "GIT_COMMIT_MESSAGE_DIFF_CONTEXT must be an integer.",
+                file=stderr,
+            )
+            return 2
+    if diff_context is not None and diff_context < 0:
+        print("--diff-context must be greater than or equal to 0.", file=stderr)
+        return 2
+
     provider_name: str = resolve_provider_name(args.provider)
     provider_arg_error = validate_provider_chunk_tokens(provider_name, chunk_tokens)
     if provider_arg_error is not None:
@@ -341,13 +384,17 @@ def _run(
             return 2
 
         base_ref = resolve_amend_base_ref(repo_root)
-        diff_text: str = get_staged_diff(repo_root, base_ref=base_ref)
+        diff_text: str = get_staged_diff(
+            repo_root,
+            base_ref=base_ref,
+            context_lines=diff_context,
+        )
     else:
         if not has_staged_changes(repo_root):
             print("No staged changes. Run 'git add' and try again.", file=stderr)
             return 2
 
-        diff_text = get_staged_diff(repo_root)
+        diff_text = get_staged_diff(repo_root, context_lines=diff_context)
 
     hint: str | None = args.description if isinstance(args.description, str) else None
 

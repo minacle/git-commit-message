@@ -183,6 +183,7 @@ def get_staged_diff(
     /,
     *,
     base_ref: str | None = None,
+    context_lines: int | None = None,
 ) -> str:
     """Return the staged changes as diff text.
 
@@ -195,6 +196,9 @@ def get_staged_diff(
         commit hash, or the empty tree hash) to diff against. When provided,
         the diff shows changes from ``base_ref`` to the staged index, instead
         of changes from ``HEAD`` to the staged index.
+    context_lines
+        Optional number of context lines for unified diff output. When ``None``,
+        Git's default context lines are used.
 
     Returns
     -------
@@ -210,6 +214,8 @@ def get_staged_diff(
         "--minimal",
         "--no-color",
     ]
+    if context_lines is not None:
+        cmd.append(f"-U{context_lines}")
     if base_ref:
         cmd.append(base_ref)
 
