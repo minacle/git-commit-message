@@ -184,6 +184,10 @@ git-commit-message --chunk-tokens 0
 # chunk the diff into ~4000-token pieces before summarising
 git-commit-message --chunk-tokens 4000
 
+# note: for provider 'ollama', values >= 1 are not supported
+# use 0 (single summary pass) or -1 (legacy one-shot)
+git-commit-message --provider ollama --chunk-tokens 0
+
 # disable summarisation and use the legacy one-shot prompt
 git-commit-message --chunk-tokens -1
 ```
@@ -222,7 +226,7 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 - `--conventional`: apply Conventional Commits constraints to the subject and footer behavior. The body format is unchanged and still includes the translated `Rationale:` line. Breaking changes are expressed with `!` in the subject line, and `BREAKING CHANGE` footer lines are not generated.
 - `--one-line`: output subject only when no trailers are appended; with `--co-author`, output is a single-line subject plus `Co-authored-by:` trailer lines
 - `--max-length N`: max subject length (default: 72)
-- `--chunk-tokens N`: token budget per diff chunk (`0` = single summary pass, `-1` disables summarisation)
+- `--chunk-tokens N`: token budget per diff chunk (`0` = single summary pass, `-1` disables summarisation). For `ollama`, values `>= 1` are not supported.
 - `--debug`: print request/response details
 - `--commit`: run `git commit -m <message>`
 - `--amend`: generate a message suitable for amending the previous commit (diff is from the amended commit's parent to the staged index; if nothing is staged, this effectively becomes the diff introduced by `HEAD`)
@@ -246,7 +250,7 @@ Optional:
 - `OLLAMA_HOST`: Ollama server URL (default: `http://localhost:11434`)
 - `LLAMACPP_HOST`: llama.cpp server URL (default: `http://localhost:8080`)
 - `GIT_COMMIT_MESSAGE_LANGUAGE`: default language/locale (default: `en-GB`)
-- `GIT_COMMIT_MESSAGE_CHUNK_TOKENS`: default chunk token budget (default: `0`)
+- `GIT_COMMIT_MESSAGE_CHUNK_TOKENS`: default chunk token budget (default: `0`; for `ollama`, values `>= 1` are not supported)
 
 Default models (if not overridden):
 

@@ -157,6 +157,33 @@ def _env_chunk_tokens_default() -> int | None:
         return None
 
 
+def _resolve_provider_name(
+    provider: str | None,
+    /,
+) -> str:
+    """Resolve provider name using CLI arg, env var, or default."""
+
+    chosen: str = provider or environ.get("GIT_COMMIT_MESSAGE_PROVIDER") or "openai"
+    return chosen.strip().lower()
+
+
+def _validate_provider_specific_args(
+    provider_name: str,
+    chunk_tokens: int,
+    /,
+) -> str | None:
+    """Validate CLI args against provider capabilities."""
+
+    if provider_name == "ollama" and chunk_tokens > 0:
+        return (
+            "'--chunk-tokens' with values >= 1 is not supported for provider 'ollama'. "
+            "Use '--chunk-tokens 0' (single summary pass) or '--chunk-tokens -1' "
+            "(disable summarisation)."
+        )
+
+    return None
+
+
 def _build_parser() -> ArgumentParser:
     """Create the CLI argument parser.
 
@@ -269,6 +296,7 @@ def _build_parser() -> ArgumentParser:
         help=(
             "Target token budget per diff chunk. "
             "0 forces a single chunk with summarisation; -1 disables summarisation (legacy one-shot). "
+            "For provider 'ollama', values >= 1 are not supported. "
             "If omitted, uses GIT_COMMIT_MESSAGE_CHUNK_TOKENS when set (default: 0)."
         ),
     )
@@ -319,6 +347,18 @@ def _run(
         Process exit code. 0 indicates success; any other value indicates failure.
     """
 
+    chunk_tokens: int | None = args.chunk_tokens
+    if chunk_tokens is None:
+        chunk_tokens = _env_chunk_tokens_default()
+    if chunk_tokens is None:
+        chunk_tokens = 0
+
+    provider_name: str = _resolve_provider_name(args.provider)
+    provider_arg_error = _validate_provider_specific_args(provider_name, chunk_tokens)
+    if provider_arg_error is not None:
+        print(provider_arg_error, file=stderr)
+        return 2
+
     repo_root: Path = get_repo_root()
 
     if args.amend:
@@ -336,12 +376,6 @@ def _run(
         diff_text = get_staged_diff(repo_root)
 
     hint: str | None = args.description if isinstance(args.description, str) else None
-
-    chunk_tokens: int | None = args.chunk_tokens
-    if chunk_tokens is None:
-        chunk_tokens = _env_chunk_tokens_default()
-    if chunk_tokens is None:
-        chunk_tokens = 0
 
     normalized_co_authors: list[str] | None = None
     if args.co_authors:

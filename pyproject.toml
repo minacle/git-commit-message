@@ -9,7 +9,6 @@ dependencies = [
 	"google-genai>=1.56.0",
 	"ollama>=0.4.0",
 	"openai>=2.6.1",
-	"tiktoken>=0.12.0",
 ]
 maintainers = [{ name = "Mina Her", email = "minacle@live.com" }]
 license = { file = "UNLICENSE" }
