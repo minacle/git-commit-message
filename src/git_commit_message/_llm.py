@@ -281,7 +281,7 @@ def _build_system_prompt(
             "- Keep the translated equivalent of 'Rationale:' as the final body line label; this section MUST be present.\n"
             "- For breaking changes, use '!' immediately before ':' in the subject line.\n"
             "- Do NOT generate any BREAKING CHANGE footer line.\n"
-            "- Do NOT translate the Conventional prefix token ('type', optional '(scope)', optional '!'). Translate only the description, bullet points, and rationale into the target language.\n"
+            "- Do NOT translate the Conventional prefix token ('<type>', optional '(<scope>)', optional '!'). Translate only the description, bullet points, and rationale into the target language.\n"
         )
     else:
         format_guidelines = (
