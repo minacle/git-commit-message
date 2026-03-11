@@ -11,16 +11,14 @@ Provider-specific API calls live in provider modules (e.g. `_gpt.py`).
 from __future__ import annotations
 
 from babel import Locale
-from os import environ
-from typing import ClassVar, Final, Protocol
+from typing import ClassVar, Protocol
 
-
-_DEFAULT_PROVIDER: Final[str] = "openai"
-_DEFAULT_MODEL_OPENAI: Final[str] = "gpt-5-mini"
-_DEFAULT_MODEL_GOOGLE: Final[str] = "gemini-2.5-flash"
-_DEFAULT_MODEL_OLLAMA: Final[str] = "gpt-oss:20b"
-_DEFAULT_MODEL_LLAMACPP: Final[str] = "default"
-_DEFAULT_LANGUAGE: Final[str] = "en-GB"
+from ._config import (
+    resolve_language_tag,
+    resolve_model_name,
+    resolve_provider_name,
+    validate_provider_chunk_tokens,
+)
 
 
 class UnsupportedProviderError(RuntimeError):
@@ -137,49 +135,13 @@ class CommitMessageResult:
         self.total_tokens = total_tokens
 
 
-def _resolve_provider(
-    provider: str | None,
-    /,
-) -> str:
-    chosen = provider or environ.get("GIT_COMMIT_MESSAGE_PROVIDER") or _DEFAULT_PROVIDER
-    return chosen.strip().lower()
-
-
-def _resolve_model(
-    model: str | None,
-    provider_name: str,
-    /,
-) -> str:
-    if provider_name == "google":
-        default_model = _DEFAULT_MODEL_GOOGLE
-        provider_model = None
-    elif provider_name == "ollama":
-        default_model = _DEFAULT_MODEL_OLLAMA
-        provider_model = environ.get("OLLAMA_MODEL")
-    elif provider_name == "llamacpp":
-        default_model = _DEFAULT_MODEL_LLAMACPP
-        provider_model = environ.get("LLAMACPP_MODEL")
-    else:
-        default_model = _DEFAULT_MODEL_OPENAI
-        provider_model = environ.get("OPENAI_MODEL")
-
-    return model or environ.get("GIT_COMMIT_MESSAGE_MODEL") or provider_model or default_model
-
-
-def _resolve_language(
-    language: str | None,
-    /,
-) -> str:
-    return language or environ.get("GIT_COMMIT_MESSAGE_LANGUAGE") or _DEFAULT_LANGUAGE
-
-
 def get_provider(
     provider: str | None,
     /,
     *,
     host: str | None = None,
 ) -> CommitMessageProvider:
-    name = _resolve_provider(provider)
+    name = resolve_provider_name(provider)
 
     if name == "openai":
         # Local import to avoid import cycles: providers may import shared types from this module.
@@ -407,14 +369,17 @@ def _build_diff_chunks(
 
         if current:
             chunks.append("".join(current))
-            current = [hunk]
-        else:
             single_tokens = provider.count_tokens(model=model, text=hunk)
             if single_tokens > chunk_tokens:
                 raise ValueError(
                     "chunk_tokens is too small to fit a single diff hunk; increase the value or disable chunking"
                 )
             current = [hunk]
+            continue
+
+        raise ValueError(
+            "chunk_tokens is too small to fit a single diff hunk; increase the value or disable chunking"
+        )
 
     if current:
         chunks.append("".join(current))
@@ -526,17 +491,23 @@ def generate_commit_message(
     conventional: bool = False,
     /,
 ) -> str:
-    chosen_provider = _resolve_provider(provider)
-    chosen_model = _resolve_model(model, chosen_provider)
-    chosen_language = _resolve_language(language)
+    chosen_provider = resolve_provider_name(provider)
+    chosen_model = resolve_model_name(model, chosen_provider)
+    chosen_language = resolve_language_tag(language)
 
     llm = get_provider(chosen_provider, host=host)
 
     normalized_chunk_tokens = 0 if chunk_tokens is None else chunk_tokens
+    provider_arg_error = validate_provider_chunk_tokens(
+        chosen_provider,
+        normalized_chunk_tokens,
+    )
+    if provider_arg_error is not None:
+        raise ValueError(provider_arg_error)
 
     if normalized_chunk_tokens != -1:
         hunks = _split_diff_into_hunks(diff)
-        if normalized_chunk_tokens == 0 or normalized_chunk_tokens < 0:
+        if normalized_chunk_tokens == 0:
             chunks = ["".join(hunks) if hunks else diff]
         else:
             chunks = _build_diff_chunks(hunks, normalized_chunk_tokens, llm, chosen_model)
@@ -583,19 +554,25 @@ def generate_commit_message_with_info(
     conventional: bool = False,
     /,
 ) -> CommitMessageResult:
-    chosen_provider = _resolve_provider(provider)
-    chosen_model = _resolve_model(model, chosen_provider)
-    chosen_language = _resolve_language(language)
+    chosen_provider = resolve_provider_name(provider)
+    chosen_model = resolve_model_name(model, chosen_provider)
+    chosen_language = resolve_language_tag(language)
 
     llm = get_provider(chosen_provider, host=host)
 
     normalized_chunk_tokens = 0 if chunk_tokens is None else chunk_tokens
+    provider_arg_error = validate_provider_chunk_tokens(
+        chosen_provider,
+        normalized_chunk_tokens,
+    )
+    if provider_arg_error is not None:
+        raise ValueError(provider_arg_error)
 
     response_id: str | None = None
 
     if normalized_chunk_tokens != -1:
         hunks = _split_diff_into_hunks(diff)
-        if normalized_chunk_tokens == 0 or normalized_chunk_tokens < 0:
+        if normalized_chunk_tokens == 0:
             chunks = ["".join(hunks) if hunks else diff]
         else:
             chunks = _build_diff_chunks(hunks, normalized_chunk_tokens, llm, chosen_model)

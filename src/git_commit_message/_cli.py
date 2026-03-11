@@ -23,6 +23,7 @@ from ._git import (
     has_staged_changes,
     resolve_amend_base_ref,
 )
+from ._config import resolve_provider_name, validate_provider_chunk_tokens
 from ._llm import (
     CommitMessageResult,
     UnsupportedProviderError,
@@ -269,6 +270,7 @@ def _build_parser() -> ArgumentParser:
         help=(
             "Target token budget per diff chunk. "
             "0 forces a single chunk with summarisation; -1 disables summarisation (legacy one-shot). "
+            "For provider 'ollama', values >= 1 are not supported. "
             "If omitted, uses GIT_COMMIT_MESSAGE_CHUNK_TOKENS when set (default: 0)."
         ),
     )
@@ -319,6 +321,18 @@ def _run(
         Process exit code. 0 indicates success; any other value indicates failure.
     """
 
+    chunk_tokens: int | None = args.chunk_tokens
+    if chunk_tokens is None:
+        chunk_tokens = _env_chunk_tokens_default()
+    if chunk_tokens is None:
+        chunk_tokens = 0
+
+    provider_name: str = resolve_provider_name(args.provider)
+    provider_arg_error = validate_provider_chunk_tokens(provider_name, chunk_tokens)
+    if provider_arg_error is not None:
+        print(provider_arg_error, file=stderr)
+        return 2
+
     repo_root: Path = get_repo_root()
 
     if args.amend:
@@ -336,12 +350,6 @@ def _run(
         diff_text = get_staged_diff(repo_root)
 
     hint: str | None = args.description if isinstance(args.description, str) else None
-
-    chunk_tokens: int | None = args.chunk_tokens
-    if chunk_tokens is None:
-        chunk_tokens = _env_chunk_tokens_default()
-    if chunk_tokens is None:
-        chunk_tokens = 0
 
     normalized_co_authors: list[str] | None = None
     if args.co_authors:

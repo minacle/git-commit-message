@@ -11,7 +11,6 @@ from os import environ
 from typing import ClassVar, Final
 
 from ollama import Client, ResponseError
-from tiktoken import Encoding, get_encoding
 
 from ._llm import LLMTextResult, LLMUsage
 
@@ -26,15 +25,6 @@ def _resolve_ollama_host(
     """Resolve the Ollama host URL from arg, env, or default."""
 
     return host or environ.get("OLLAMA_HOST") or _DEFAULT_OLLAMA_HOST
-
-
-def _get_encoding() -> Encoding:
-    """Get a fallback encoding for token counting."""
-
-    try:
-        return get_encoding("cl100k_base")
-    except Exception:
-        return get_encoding("gpt2")
 
 
 class OllamaProvider:
@@ -113,10 +103,7 @@ class OllamaProvider:
         model: str,
         text: str,
     ) -> int:
-        """Approximate token count using tiktoken; fallback to whitespace split."""
-
-        try:
-            encoding = _get_encoding()
-            return len(encoding.encode(text))
-        except Exception:
-            return len(text.split())
+        raise RuntimeError(
+            "Token counting is not supported for the Ollama provider. "
+            "Try `--chunk-tokens 0` (default) or `--chunk-tokens -1` to disable summarisation."
+        )

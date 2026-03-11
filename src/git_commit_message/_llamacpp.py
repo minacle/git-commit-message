@@ -12,7 +12,6 @@ from typing import ClassVar, Final
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
-from tiktoken import Encoding, get_encoding
 
 from ._llm import LLMTextResult, LLMUsage
 
@@ -27,15 +26,6 @@ def _resolve_llamacpp_host(
     """Resolve the llama.cpp server host URL from arg, env, or default."""
 
     return host or environ.get("LLAMACPP_HOST") or _DEFAULT_LLAMACPP_HOST
-
-
-def _get_encoding() -> Encoding:
-    """Get a fallback encoding for token counting."""
-
-    try:
-        return get_encoding("cl100k_base")
-    except Exception:
-        return get_encoding("gpt2")
 
 
 class LlamaCppProvider:
@@ -135,11 +125,17 @@ class LlamaCppProvider:
                 },
                 cast_to=dict,
             )
-            return response.get("total", 0)
-        except Exception:
-            # Fallback to tiktoken approximation
-            try:
-                encoding = _get_encoding()
-                return len(encoding.encode(text))
-            except Exception:
-                return len(text.split())
+        except Exception as exc:
+            raise RuntimeError(
+                "Token counting failed for the llama.cpp provider. "
+                "Try `--chunk-tokens 0` (default) or `--chunk-tokens -1` to disable summarisation."
+            ) from exc
+
+        total = response.get("total") if isinstance(response, dict) else None
+        if not isinstance(total, int):
+            raise RuntimeError(
+                "Token counting returned an unexpected response from the llama.cpp provider. "
+                "Try `--chunk-tokens 0` (default) or `--chunk-tokens -1` to disable summarisation."
+            )
+
+        return total

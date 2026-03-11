@@ -11,18 +11,7 @@ from openai.types.responses import Response
 from os import environ
 from typing import ClassVar
 
-from tiktoken import Encoding, encoding_for_model, get_encoding
 from ._llm import LLMTextResult, LLMUsage
-
-
-def _encoding_for_model(
-    model: str,
-    /,
-) -> Encoding:
-    try:
-        return encoding_for_model(model)
-    except Exception:
-        return get_encoding("cl100k_base")
 
 
 class OpenAIResponsesProvider:
@@ -50,8 +39,35 @@ class OpenAIResponsesProvider:
         model: str,
         text: str,
     ) -> int:
-        encoding = _encoding_for_model(model)
-        return len(encoding.encode(text))
+        try:
+            resp = self._client.responses.input_tokens.count(
+                model=model,
+                input=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": text,
+                            }
+                        ],
+                    }
+                ],
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                "Token counting failed for the OpenAI provider. "
+                "Try `--chunk-tokens 0` (default) or `--chunk-tokens -1` to disable summarisation."
+            ) from exc
+
+        prompt_tokens = getattr(resp, "input_tokens", None)
+        if not isinstance(prompt_tokens, int):
+            raise RuntimeError(
+                "Token counting returned an unexpected response from the OpenAI provider. "
+                "Try `--chunk-tokens 0` (default) or `--chunk-tokens -1` to disable summarisation."
+            )
+
+        return prompt_tokens
 
     def generate_text(
         self,
