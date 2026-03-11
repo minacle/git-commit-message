@@ -37,6 +37,7 @@ class CliArgs(Namespace):
         "commit",
         "amend",
         "edit",
+        "conventional",
         "provider",
         "model",
         "language",
@@ -56,6 +57,7 @@ class CliArgs(Namespace):
         self.commit: bool = False
         self.amend: bool = False
         self.edit: bool = False
+        self.conventional: bool = False
         self.provider: str | None = None
         self.model: str | None = None
         self.language: str | None = None
@@ -197,6 +199,15 @@ def _build_parser() -> ArgumentParser:
         "--edit",
         action="store_true",
         help="Open an editor to amend the message before committing. Use with '--commit'.",
+    )
+
+    parser.add_argument(
+        "--conventional",
+        action="store_true",
+        help=(
+            "Use Conventional Commits constraints for the subject line and footer. "
+            "The existing body format remains unchanged, including the translated Rationale line."
+        ),
     )
 
     parser.add_argument(
@@ -353,6 +364,7 @@ def _run(
                 chunk_tokens,
                 args.provider,
                 args.host,
+                args.conventional,
             )
             message = result.message
         else:
@@ -366,6 +378,7 @@ def _run(
                 chunk_tokens,
                 args.provider,
                 args.host,
+                args.conventional,
             )
     except UnsupportedProviderError as exc:
         print(str(exc), file=stderr)

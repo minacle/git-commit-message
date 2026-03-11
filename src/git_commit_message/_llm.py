@@ -242,19 +242,54 @@ def _build_system_prompt(
     single_line: bool,
     subject_max: int | None,
     language: str,
+    conventional: bool = False,
     /,
 ) -> str:
     display_language: str = _language_display(language)
     max_len = subject_max or 72
     if single_line:
+        conventional_rule: str
+        if conventional:
+            conventional_rule = (
+                "Use one of these Conventional Commits subject forms: '<type>: <description>', '<type>(<scope>): <description>', '<type>!: <description>', or '<type>(<scope>)!: <description>'. "
+                "When a scope is present, it MUST be parenthesized and directly attached to the type with no spaces. "
+                "Represent breaking changes with '!' before ':' in the subject; do not output a BREAKING CHANGE footer. "
+                "Do NOT translate the Conventional prefix token ('<type>', optional '(<scope>)', optional '!'); translate only the description into the target language. "
+            )
+        else:
+            conventional_rule = (
+                "Do NOT use Conventional Commits title format. "
+                "Do not start with '<type>:' or '<type>(<scope>):' prefixes such as 'feat:', 'fix:', 'docs:', 'chore:', 'refactor:', 'test:', 'perf:', 'ci:', or 'build:'. "
+            )
         return (
             f"You are an expert Git commit message generator. "
             f"Always use '{display_language}' spelling and style. "
+            f"{conventional_rule}"
             f"Return a single-line imperative subject only (<= {max_len} chars). "
             f"Do not include a body, bullet points, or any rationale. Do not include any line breaks. "
             f"Consider the user-provided auxiliary context if present. "
             f"Return only the commit message text (no code fences or prefixes like 'Commit message:')."
         )
+
+    format_guidelines: str = ""
+    if conventional:
+        format_guidelines = (
+            "\n"
+            "- The subject line MUST use one of these forms: '<type>: <description>', '<type>(<scope>): <description>', '<type>!: <description>', or '<type>(<scope>)!: <description>'.\n"
+            "- If scope is used, it MUST be in parentheses and directly attached to type with no spaces, e.g. 'feat(parser):'.\n"
+            "- In Conventional mode, only the subject line and footer conventions are additionally constrained; keep the body structure unchanged.\n"
+            "- Keep the translated equivalent of 'Rationale:' as the final body line label; this section MUST be present.\n"
+            "- For breaking changes, use '!' immediately before ':' in the subject line.\n"
+            "- Do NOT generate any BREAKING CHANGE footer line.\n"
+            "- Do NOT translate the Conventional prefix token ('<type>', optional '(<scope>)', optional '!'). Translate only the description, bullet points, and rationale into the target language.\n"
+        )
+    else:
+        format_guidelines = (
+            "\n"
+            "- Do NOT use Conventional Commits subject prefixes.\n"
+            "- The subject MUST NOT start with '<type>:' or '<type>(<scope>):' patterns (for example: 'feat:', 'fix:', 'docs:', 'chore:', 'refactor:', 'test:', 'perf:', 'ci:', or 'build:').\n"
+        )
+
     return (
         f"You are an expert Git commit message generator. "
         f"Always use '{display_language}' spelling and style. "
@@ -282,6 +317,7 @@ def _build_system_prompt(
         f"- If few details are necessary, include at least one bullet summarising the key change.\n"
         f"- If you cannot provide any body content, still output the subject line; the subject line must never be omitted.\n"
         f"- Consider the user-provided auxiliary context if present.\n"
+        f"{format_guidelines}"
         f"Return only the commit message text in the above format (no code fences or extra labels)."
     )
 
@@ -420,9 +456,10 @@ def _generate_commit_from_summaries(
     single_line: bool,
     subject_max: int | None,
     language: str,
+    conventional: bool = False,
     /,
 ) -> LLMTextResult:
-    instructions = _build_system_prompt(single_line, subject_max, language)
+    instructions = _build_system_prompt(single_line, subject_max, language, conventional)
     sections: list[str] = []
 
     if hint:
@@ -486,6 +523,7 @@ def generate_commit_message(
     chunk_tokens: int | None = 0,
     provider: str | None = None,
     host: str | None = None,
+    conventional: bool = False,
     /,
 ) -> str:
     chosen_provider = _resolve_provider(provider)
@@ -513,10 +551,11 @@ def generate_commit_message(
             single_line,
             subject_max,
             chosen_language,
+            conventional,
         )
         text = (final.text or "").strip()
     else:
-        instructions = _build_system_prompt(single_line, subject_max, chosen_language)
+        instructions = _build_system_prompt(single_line, subject_max, chosen_language, conventional)
         user_text = _build_combined_prompt(diff, hint)
         final = llm.generate_text(
             model=chosen_model,
@@ -541,6 +580,7 @@ def generate_commit_message_with_info(
     chunk_tokens: int | None = 0,
     provider: str | None = None,
     host: str | None = None,
+    conventional: bool = False,
     /,
 ) -> CommitMessageResult:
     chosen_provider = _resolve_provider(provider)
@@ -570,6 +610,7 @@ def generate_commit_message_with_info(
             single_line,
             subject_max,
             chosen_language,
+            conventional,
         )
 
         combined_prompt = _build_combined_prompt(
@@ -586,7 +627,7 @@ def generate_commit_message_with_info(
         response_id = final_result.response_id
 
     else:
-        instructions = _build_system_prompt(single_line, subject_max, chosen_language)
+        instructions = _build_system_prompt(single_line, subject_max, chosen_language, conventional)
         combined_prompt = _build_combined_prompt(diff, hint)
 
         final_result = llm.generate_text(
