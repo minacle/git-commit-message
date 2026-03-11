@@ -249,7 +249,8 @@ def _build_system_prompt(
     max_len = subject_max or 72
     if single_line:
         conventional_rule: str = (
-            "Use Conventional Commits subject format '<type>[optional scope][optional !]: <description>'. "
+            "Use one of these Conventional Commits subject forms: '<type>: <description>', '<type>(<scope>): <description>', '<type>!: <description>', or '<type>(<scope>)!: <description>'. "
+            "When a scope is present, it MUST be parenthesized and directly attached to the type with no spaces. "
             "Represent breaking changes with '!' before ':' in the subject; do not output a BREAKING CHANGE footer. "
             if conventional
             else (
@@ -271,11 +272,13 @@ def _build_system_prompt(
     if conventional:
         format_guidelines = (
             "\n"
-            "- The subject line MUST use Conventional Commits format: '<type>[optional scope][optional !]: <description>'.\n"
+            "- The subject line MUST use one of these forms: '<type>: <description>', '<type>(<scope>): <description>', '<type>!: <description>', or '<type>(<scope>)!: <description>'.\n"
+            "- If scope is used, it MUST be in parentheses and directly attached to type with no spaces, e.g. 'feat(parser):'.\n"
             "- In Conventional mode, only the subject line and footer conventions are additionally constrained; keep the body structure unchanged.\n"
             "- Keep the translated equivalent of 'Rationale:' as the final body line label; this section MUST be present.\n"
             "- For breaking changes, use '!' immediately before ':' in the subject line.\n"
             "- Do NOT generate any BREAKING CHANGE footer line.\n"
+            "- Do NOT translate the Conventional prefix token ('type', optional '(scope)', optional '!'). Translate only the description, bullet points, and rationale into the target language.\n"
         )
     else:
         format_guidelines = (
