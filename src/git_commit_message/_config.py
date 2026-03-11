@@ -55,6 +55,12 @@ def validate_provider_chunk_tokens(
     chunk_tokens: int,
     /,
 ) -> str | None:
+    if chunk_tokens < -1:
+        return (
+            "'--chunk-tokens' must be -1 or greater. "
+            "Use -1 to disable summarisation, or 0/positive values to enable summarisation."
+        )
+
     if provider_name == "ollama" and chunk_tokens > 0:
         return (
             "'--chunk-tokens' with values >= 1 is not supported for provider 'ollama'. "
