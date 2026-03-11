@@ -192,6 +192,16 @@ git-commit-message --provider ollama --chunk-tokens 0
 git-commit-message --chunk-tokens -1
 ```
 
+Adjust unified diff context lines:
+
+```sh
+# use 5 context lines around each change hunk
+git-commit-message --diff-context 5
+
+# include only changed lines (no surrounding context)
+git-commit-message --diff-context 0
+```
+
 Select output language/locale (IETF language tag):
 
 ```sh
@@ -227,6 +237,7 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 - `--one-line`: output subject only when no trailers are appended; with `--co-author`, output is a single-line subject plus `Co-authored-by:` trailer lines
 - `--max-length N`: max subject length (default: 72)
 - `--chunk-tokens N`: token budget per diff chunk (`0` = single summary pass, `-1` disables summarisation). For `ollama`, values `>= 1` are not supported.
+- `--diff-context N`: context lines in unified diff (`N >= 0`). If omitted, uses `GIT_COMMIT_MESSAGE_DIFF_CONTEXT` when set; otherwise uses Git default (usually `3`).
 - `--debug`: print request/response details
 - `--commit`: run `git commit -m <message>`
 - `--amend`: generate a message suitable for amending the previous commit (diff is from the amended commit's parent to the staged index; if nothing is staged, this effectively becomes the diff introduced by `HEAD`)
@@ -251,6 +262,7 @@ Optional:
 - `LLAMACPP_HOST`: llama.cpp server URL (default: `http://localhost:8080`)
 - `GIT_COMMIT_MESSAGE_LANGUAGE`: default language/locale (default: `en-GB`)
 - `GIT_COMMIT_MESSAGE_CHUNK_TOKENS`: default chunk token budget (default: `0`; for `ollama`, values `>= 1` are not supported)
+- `GIT_COMMIT_MESSAGE_DIFF_CONTEXT`: default unified diff context lines (`0` or greater). If unset, Git default is used (usually `3`).
 
 Default models (if not overridden):
 
