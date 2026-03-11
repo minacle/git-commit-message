@@ -7,7 +7,7 @@ Generate a commit message from your staged changes using OpenAI, Google Gemini, 
 ## Requirements
 
 - Python 3.13+
-- A Git repo with staged changes (`git add ...`) (or use `--amend` even if nothing is staged)
+- A Git repo with staged changes (`git add ...`) (or use `--amend` / `--reword <commit>` even if nothing is staged)
 
 ## Install
 
@@ -169,6 +169,16 @@ git-commit-message --commit --amend "optional context"
 git-commit-message --commit --amend --edit "optional context"
 ```
 
+Reword a specific commit (interactive rebase):
+
+```sh
+# print only (generate a message from the target commit diff)
+git-commit-message --reword HEAD~2 "optional context"
+
+# run actual reword via interactive rebase
+git-commit-message --reword HEAD~2 --commit "optional context"
+```
+
 Limit subject length:
 
 ```sh
@@ -241,6 +251,7 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 - `--debug`: print request/response details
 - `--commit`: run `git commit -m <message>`
 - `--amend`: generate a message suitable for amending the previous commit (diff is from the amended commit's parent to the staged index; if nothing is staged, this effectively becomes the diff introduced by `HEAD`)
+- `--reword COMMIT`: generate a message from the specified commit diff. With `--commit`, run interactive rebase and reword that commit. Without `--commit`, print only. The target must be an ancestor of `HEAD`. Cannot be combined with `--amend` or `--edit`.
 - `--edit`: with `--commit`, open editor for final message
 - `--host URL`: host URL for providers like Ollama or llama.cpp (default: `http://localhost:11434` for Ollama, `http://localhost:8080` for llama.cpp)
 - `--co-author VALUE`: append `Co-authored-by:` trailer(s). Repeat to add multiple values. Accepted forms: `Name <email@example.com>` or `copilot` (alias, case-insensitive).
