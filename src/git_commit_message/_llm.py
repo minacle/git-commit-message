@@ -377,11 +377,9 @@ def _build_diff_chunks(
             current = [hunk]
             continue
 
-        if token_count > chunk_tokens:
-            raise ValueError(
-                "chunk_tokens is too small to fit a single diff hunk; increase the value or disable chunking"
-            )
-        current = [hunk]
+        raise ValueError(
+            "chunk_tokens is too small to fit a single diff hunk; increase the value or disable chunking"
+        )
 
     if current:
         chunks.append("".join(current))
