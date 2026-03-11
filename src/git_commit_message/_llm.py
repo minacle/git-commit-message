@@ -248,16 +248,18 @@ def _build_system_prompt(
     display_language: str = _language_display(language)
     max_len = subject_max or 72
     if single_line:
-        conventional_rule: str = (
-            "Use one of these Conventional Commits subject forms: '<type>: <description>', '<type>(<scope>): <description>', '<type>!: <description>', or '<type>(<scope>)!: <description>'. "
-            "When a scope is present, it MUST be parenthesized and directly attached to the type with no spaces. "
-            "Represent breaking changes with '!' before ':' in the subject; do not output a BREAKING CHANGE footer. "
-            if conventional
-            else (
+        conventional_rule: str
+        if conventional:
+            conventional_rule = (
+                "Use one of these Conventional Commits subject forms: '<type>: <description>', '<type>(<scope>): <description>', '<type>!: <description>', or '<type>(<scope>)!: <description>'. "
+                "When a scope is present, it MUST be parenthesized and directly attached to the type with no spaces. "
+                "Represent breaking changes with '!' before ':' in the subject; do not output a BREAKING CHANGE footer. "
+            )
+        else:
+            conventional_rule = (
                 "Do NOT use Conventional Commits title format. "
                 "Do not start with '<type>:' or '<type>(<scope>):' prefixes such as 'feat:', 'fix:', 'docs:', 'chore:', 'refactor:', 'test:', 'perf:', 'ci:', or 'build:'. "
             )
-        )
         return (
             f"You are an expert Git commit message generator. "
             f"Always use '{display_language}' spelling and style. "
