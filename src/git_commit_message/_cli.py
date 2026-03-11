@@ -23,6 +23,7 @@ from ._git import (
     has_staged_changes,
     resolve_amend_base_ref,
 )
+from ._config import resolve_provider_name
 from ._llm import (
     CommitMessageResult,
     UnsupportedProviderError,
@@ -155,16 +156,6 @@ def _env_chunk_tokens_default() -> int | None:
         return int(raw)
     except ValueError:
         return None
-
-
-def _resolve_provider_name(
-    provider: str | None,
-    /,
-) -> str:
-    """Resolve provider name using CLI arg, env var, or default."""
-
-    chosen: str = provider or environ.get("GIT_COMMIT_MESSAGE_PROVIDER") or "openai"
-    return chosen.strip().lower()
 
 
 def _validate_provider_specific_args(
@@ -353,7 +344,7 @@ def _run(
     if chunk_tokens is None:
         chunk_tokens = 0
 
-    provider_name: str = _resolve_provider_name(args.provider)
+    provider_name: str = resolve_provider_name(args.provider)
     provider_arg_error = _validate_provider_specific_args(provider_name, chunk_tokens)
     if provider_arg_error is not None:
         print(provider_arg_error, file=stderr)
