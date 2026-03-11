@@ -116,6 +116,18 @@ git-commit-message --one-line "optional context"
 git-commit-message --one-line --co-author 'John Doe <john.doe@example.com>'
 ```
 
+Use Conventional Commits constraints for the subject/footer only (body format is preserved):
+
+```sh
+git-commit-message --conventional
+
+# can be combined with one-line mode
+git-commit-message --conventional --one-line
+
+# co-author trailers are appended after any existing footers
+git-commit-message --conventional --co-author copilot
+```
+
 Select provider:
 
 ```sh
@@ -207,6 +219,7 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 - `--provider {openai,google,ollama,llamacpp}`: provider to use (default: `openai`)
 - `--model MODEL`: model override (provider-specific; ignored for llama.cpp)
 - `--language TAG`: output language/locale (default: `en-GB`)
+- `--conventional`: apply Conventional Commits constraints to the subject and footer behavior. The body format is unchanged and still includes the translated `Rationale:` line. Breaking changes are expressed with `!` in the subject line, and `BREAKING CHANGE` footer lines are not generated.
 - `--one-line`: output subject only when no trailers are appended; with `--co-author`, output is a single-line subject plus `Co-authored-by:` trailer lines
 - `--max-length N`: max subject length (default: 72)
 - `--chunk-tokens N`: token budget per diff chunk (`0` = single summary pass, `-1` disables summarisation)
