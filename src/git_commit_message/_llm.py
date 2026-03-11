@@ -507,7 +507,7 @@ def generate_commit_message(
 
     if normalized_chunk_tokens != -1:
         hunks = _split_diff_into_hunks(diff)
-        if normalized_chunk_tokens == 0 or normalized_chunk_tokens < 0:
+        if normalized_chunk_tokens == 0:
             chunks = ["".join(hunks) if hunks else diff]
         else:
             chunks = _build_diff_chunks(hunks, normalized_chunk_tokens, llm, chosen_model)
@@ -572,7 +572,7 @@ def generate_commit_message_with_info(
 
     if normalized_chunk_tokens != -1:
         hunks = _split_diff_into_hunks(diff)
-        if normalized_chunk_tokens == 0 or normalized_chunk_tokens < 0:
+        if normalized_chunk_tokens == 0:
             chunks = ["".join(hunks) if hunks else diff]
         else:
             chunks = _build_diff_chunks(hunks, normalized_chunk_tokens, llm, chosen_model)
