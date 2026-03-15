@@ -17,10 +17,14 @@ from typing import Final
 
 from ._git import (
     commit_with_message,
+    get_commit_diff,
     get_repo_root,
     get_staged_diff,
     has_head_commit,
     has_staged_changes,
+    is_ancestor_commit,
+    reword_commit_with_message,
+    resolve_commit_ref,
     resolve_amend_base_ref,
 )
 from ._config import resolve_provider_name, validate_provider_chunk_tokens
@@ -37,6 +41,7 @@ class CliArgs(Namespace):
         "description",
         "commit",
         "amend",
+        "reword",
         "edit",
         "conventional",
         "provider",
@@ -58,6 +63,7 @@ class CliArgs(Namespace):
         self.description: str | None = None
         self.commit: bool = False
         self.amend: bool = False
+        self.reword: str | None = None
         self.edit: bool = False
         self.conventional: bool = False
         self.provider: str | None = None
@@ -210,6 +216,17 @@ def _build_parser() -> ArgumentParser:
             "Generate a message suitable for amending the previous commit. "
             "When set, the diff is computed from the amended commit's parent to the staged index. "
             "Use with '--commit' to run the amend, or omit '--commit' to print the message only."
+        ),
+    )
+
+    parser.add_argument(
+        "--reword",
+        metavar="COMMIT",
+        default=None,
+        help=(
+            "Generate a message from the specified commit diff. "
+            "Use with '--commit' to run interactive rebase reword for that commit. "
+            "Without '--commit', only prints the generated message."
         ),
     )
 
@@ -377,8 +394,33 @@ def _run(
         return 2
 
     repo_root: Path = get_repo_root()
+    reword_commit_hash: str | None = None
 
-    if args.amend:
+    if args.reword is not None:
+        if args.amend:
+            print("'--reword' and '--amend' cannot be used together.", file=stderr)
+            return 2
+        if not has_head_commit(repo_root):
+            print("Cannot reword: the repository has no commits yet.", file=stderr)
+            return 2
+        try:
+            reword_commit_hash = resolve_commit_ref(repo_root, args.reword)
+        except RuntimeError as exc:
+            print(str(exc), file=stderr)
+            return 2
+        if not is_ancestor_commit(repo_root, reword_commit_hash):
+            print(
+                "'--reword' target must be an ancestor of HEAD on the current branch.",
+                file=stderr,
+            )
+            return 2
+        diff_text = get_commit_diff(
+            repo_root,
+            reword_commit_hash,
+            context_lines=diff_context,
+        )
+
+    elif args.amend:
         if not has_head_commit(repo_root):
             print("Cannot amend: the repository has no commits yet.", file=stderr)
             return 2
@@ -502,7 +544,9 @@ def _run(
         print("\n==== Commit Message ====")
         print(message)
 
-    if args.edit:
+    if reword_commit_hash is not None:
+        rc = reword_commit_with_message(message, reword_commit_hash, repo_root)
+    elif args.edit:
         rc: int = commit_with_message(message, True, repo_root, amend=args.amend)
     else:
         rc = commit_with_message(message, False, repo_root, amend=args.amend)
@@ -522,6 +566,9 @@ def main() -> None:
 
     if args.edit and not args.commit:
         print("'--edit' must be used together with '--commit'.", file=stderr)
+        sys_exit(2)
+    if args.edit and args.reword is not None:
+        print("'--edit' cannot be used together with '--reword'.", file=stderr)
         sys_exit(2)
 
     code: int = _run(args)
