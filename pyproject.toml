@@ -1,6 +1,6 @@
 [project]
 name = "git-commit-message"
-version = "0.9.0"
+version = "0.9.1"
 description = "Generate Git commit messages from staged changes using LLM"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -13,7 +13,7 @@ dependencies = [
 maintainers = [{ name = "Mina Her", email = "minacle@live.com" }]
 license = { file = "UNLICENSE" }
 classifiers = [
-	"Development Status :: 3 - Alpha",
+	"Development Status :: 4 - Beta",
 	"Environment :: Console",
 	"Intended Audience :: Developers",
 	"License :: OSI Approved :: The Unlicense (Unlicense)",
@@ -22,6 +22,7 @@ classifiers = [
 	"Programming Language :: Python :: 3",
 	"Programming Language :: Python :: 3 :: Only",
 	"Programming Language :: Python :: 3.13",
+	"Programming Language :: Python :: 3.14",
 	"Topic :: Software Development :: Version Control :: Git",
 ]
 
