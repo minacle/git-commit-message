@@ -279,7 +279,8 @@ def get_git_log(
     Returns
     -------
     str | None
-        Formatted log text, or ``None`` if the repository has no commits.
+        Formatted log text, or ``None`` if the repository has no commits
+        or if ``git log`` fails.
     """
 
     if count < 1:
@@ -294,7 +295,7 @@ def get_git_log(
                 "git",
                 "log",
                 f"-{count}",
-                "--format=%h %s%n%n%b%n---",
+                "--format=%h %s%n%n%b%n---%n",
             ],
             cwd=str(cwd),
         )
