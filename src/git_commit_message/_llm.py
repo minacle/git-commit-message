@@ -298,12 +298,19 @@ def _build_combined_prompt(
     hint: str | None,
     content_label: str = "Changes (diff)",
     /,
+    *,
+    branch: str | None = None,
+    log: str | None = None,
 ) -> str:
-    hint_content: str | None = (
-        f"# Auxiliary context (user-provided)\n{hint}" if hint else None
-    )
-    content: str = f"# {content_label}\n{diff}"
-    return "\n\n".join([part for part in (hint_content, content) if part is not None])
+    parts: list[str] = []
+    if hint:
+        parts.append(f"# Auxiliary context (user-provided)\n{hint}")
+    if branch:
+        parts.append(f"# Current branch\n{branch}")
+    if log:
+        parts.append(f"# Recent commits\n{log}")
+    parts.append(f"# {content_label}\n{diff}")
+    return "\n\n".join(parts)
 
 
 def _split_diff_into_hunks(
@@ -423,12 +430,21 @@ def _generate_commit_from_summaries(
     language: str,
     conventional: bool = False,
     /,
+    *,
+    branch: str | None = None,
+    log: str | None = None,
 ) -> LLMTextResult:
     instructions = _build_system_prompt(single_line, subject_max, language, conventional)
     sections: list[str] = []
 
     if hint:
         sections.append(f"# Auxiliary context (user-provided)\n{hint}")
+
+    if branch:
+        sections.append(f"# Current branch\n{branch}")
+
+    if log:
+        sections.append(f"# Recent commits\n{log}")
 
     if summaries:
         numbered = [
@@ -490,6 +506,9 @@ def generate_commit_message(
     host: str | None = None,
     conventional: bool = False,
     /,
+    *,
+    branch: str | None = None,
+    log: str | None = None,
 ) -> str:
     chosen_provider = resolve_provider_name(provider)
     chosen_model = resolve_model_name(model, chosen_provider)
@@ -523,11 +542,13 @@ def generate_commit_message(
             subject_max,
             chosen_language,
             conventional,
+            branch=branch,
+            log=log,
         )
         text = (final.text or "").strip()
     else:
         instructions = _build_system_prompt(single_line, subject_max, chosen_language, conventional)
-        user_text = _build_combined_prompt(diff, hint)
+        user_text = _build_combined_prompt(diff, hint, branch=branch, log=log)
         final = llm.generate_text(
             model=chosen_model,
             instructions=instructions,
@@ -553,6 +574,9 @@ def generate_commit_message_with_info(
     host: str | None = None,
     conventional: bool = False,
     /,
+    *,
+    branch: str | None = None,
+    log: str | None = None,
 ) -> CommitMessageResult:
     chosen_provider = resolve_provider_name(provider)
     chosen_model = resolve_model_name(model, chosen_provider)
@@ -588,12 +612,16 @@ def generate_commit_message_with_info(
             subject_max,
             chosen_language,
             conventional,
+            branch=branch,
+            log=log,
         )
 
         combined_prompt = _build_combined_prompt(
             "\n".join(summary_texts),
             hint,
             "Combined summaries (English)",
+            branch=branch,
+            log=log,
         )
 
         prompt_tokens, completion_tokens, total_tokens = _sum_usage(
@@ -605,7 +633,7 @@ def generate_commit_message_with_info(
 
     else:
         instructions = _build_system_prompt(single_line, subject_max, chosen_language, conventional)
-        combined_prompt = _build_combined_prompt(diff, hint)
+        combined_prompt = _build_combined_prompt(diff, hint, branch=branch, log=log)
 
         final_result = llm.generate_text(
             model=chosen_model,
