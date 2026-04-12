@@ -17,6 +17,8 @@ from typing import Final
 
 from ._git import (
     commit_with_message,
+    get_current_branch,
+    get_git_log,
     get_repo_root,
     get_staged_diff,
     has_head_commit,
@@ -47,6 +49,9 @@ class CliArgs(Namespace):
         "max_length",
         "chunk_tokens",
         "diff_context",
+        "no_branch",
+        "no_log",
+        "log_count",
         "host",
         "co_authors",
     )
@@ -68,6 +73,9 @@ class CliArgs(Namespace):
         self.max_length: int | None = None
         self.chunk_tokens: int | None = None
         self.diff_context: int | None = None
+        self.no_branch: bool = False
+        self.no_log: bool = False
+        self.log_count: int = 10
         self.host: str | None = None
         self.co_authors: list[str] | None = None
 
@@ -305,6 +313,31 @@ def _build_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
+        "--no-branch",
+        dest="no_branch",
+        action="store_true",
+        help="Do not include the current branch name in the LLM context.",
+    )
+
+    parser.add_argument(
+        "--no-log",
+        dest="no_log",
+        action="store_true",
+        help="Do not include recent Git log entries in the LLM context.",
+    )
+
+    parser.add_argument(
+        "--log-count",
+        dest="log_count",
+        type=int,
+        default=10,
+        help=(
+            "Number of recent Git log entries to include in the LLM context "
+            "(default: 10). Ignored when --no-log is set."
+        ),
+    )
+
+    parser.add_argument(
         "--host",
         dest="host",
         default=None,
@@ -370,6 +403,10 @@ def _run(
         print("--diff-context must be greater than or equal to 0.", file=stderr)
         return 2
 
+    if args.log_count < 1:
+        print("--log-count must be greater than or equal to 1.", file=stderr)
+        return 2
+
     provider_name: str = resolve_provider_name(args.provider)
     provider_arg_error = validate_provider_chunk_tokens(provider_name, chunk_tokens)
     if provider_arg_error is not None:
@@ -396,6 +433,9 @@ def _run(
 
         diff_text = get_staged_diff(repo_root, context_lines=diff_context)
 
+    branch: str | None = None if args.no_branch else get_current_branch(repo_root)
+    log: str | None = None if args.no_log else get_git_log(repo_root, count=args.log_count)
+
     hint: str | None = args.description if isinstance(args.description, str) else None
 
     normalized_co_authors: list[str] | None = None
@@ -420,6 +460,8 @@ def _run(
                 args.provider,
                 args.host,
                 args.conventional,
+                branch=branch,
+                log=log,
             )
             message = result.message
         else:
@@ -434,6 +476,8 @@ def _run(
                 args.provider,
                 args.host,
                 args.conventional,
+                branch=branch,
+                log=log,
             )
     except UnsupportedProviderError as exc:
         print(str(exc), file=stderr)

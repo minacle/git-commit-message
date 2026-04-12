@@ -232,6 +232,78 @@ def get_staged_diff(
     return out.decode()
 
 
+def get_current_branch(
+    cwd: Path,
+    /,
+) -> str | None:
+    """Return the current branch name, or ``None`` if HEAD is detached.
+
+    Parameters
+    ----------
+    cwd
+        Repository directory in which to run Git.
+
+    Returns
+    -------
+    str | None
+        Branch name, or ``None`` when HEAD is detached or the command fails.
+    """
+
+    completed = run(
+        ["git", "branch", "--show-current"],
+        cwd=str(cwd),
+        check=False,
+        capture_output=True,
+    )
+    if completed.returncode != 0:
+        return None
+    name = completed.stdout.decode().strip()
+    return name or None
+
+
+def get_git_log(
+    cwd: Path,
+    /,
+    *,
+    count: int = 10,
+) -> str | None:
+    """Return recent Git log entries as formatted text.
+
+    Parameters
+    ----------
+    cwd
+        Repository directory in which to run Git.
+    count
+        Maximum number of commits to include.
+
+    Returns
+    -------
+    str | None
+        Formatted log text, or ``None`` if the repository has no commits.
+    """
+
+    if not has_head_commit(cwd):
+        return None
+
+    try:
+        out: bytes = check_output(
+            [
+                "git",
+                "log",
+                f"-{count}",
+                "--format=%h %s%n%n%b%n---",
+            ],
+            cwd=str(cwd),
+        )
+    except CalledProcessError:
+        return None
+
+    text = out.decode().strip()
+    return text or None
+
+    return out.decode()
+
+
 def commit_with_message(
     message: str,
     edit: bool,
