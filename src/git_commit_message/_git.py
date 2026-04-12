@@ -282,6 +282,9 @@ def get_git_log(
         Formatted log text, or ``None`` if the repository has no commits.
     """
 
+    if count < 1:
+        raise ValueError(f"count must be >= 1, got {count}")
+
     if not has_head_commit(cwd):
         return None
 
@@ -300,8 +303,6 @@ def get_git_log(
 
     text = out.decode().strip()
     return text or None
-
-    return out.decode()
 
 
 def commit_with_message(

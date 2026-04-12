@@ -403,7 +403,7 @@ def _run(
         print("--diff-context must be greater than or equal to 0.", file=stderr)
         return 2
 
-    if args.log_count < 1:
+    if not args.no_log and args.log_count < 1:
         print("--log-count must be greater than or equal to 1.", file=stderr)
         return 2
 
