@@ -243,7 +243,7 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 - `--amend`: generate a message suitable for amending the previous commit (diff is from the amended commit's parent to the staged index; if nothing is staged, this effectively becomes the diff introduced by `HEAD`)
 - `--edit`: with `--commit`, open editor for final message
 - `--host URL`: host URL for providers like Ollama or llama.cpp (default: `http://localhost:11434` for Ollama, `http://localhost:8080` for llama.cpp)
-- `--co-author VALUE`: append `Co-authored-by:` trailer(s). Repeat to add multiple values. Accepted forms: `Name <email@example.com>` or `copilot` (alias, case-insensitive).
+- `--co-author VALUE`: append `Co-authored-by:` trailer(s). Repeat to add multiple values. Accepted forms: `Name <email@example.com>` or an alias keyword (`claude-code`, `codex`, `copilot`, `copilot-cli`; case-insensitive).
 
 ## Environment variables
 

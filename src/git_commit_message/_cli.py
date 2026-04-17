@@ -84,7 +84,10 @@ _CO_AUTHOR_LINE_RE: Final[Pattern[str]] = re.compile(
     r"^\s*([^<>\s\n][^<>\n]*?)\s*<([^<>\s\n]+@[^<>\s\n]+)>\s*$"
 )
 _CO_AUTHOR_ALIASES: Final[dict[str, str]] = {
+    "claude-code": "Claude <noreply@anthropic.com>",
+    "codex": "Codex <noreply@openai.com>",
     "copilot": "Copilot <copilot@github.com>",
+    "copilot-cli": "Copilot <223556219+Copilot@users.noreply.github.com>",
 }
 
 
