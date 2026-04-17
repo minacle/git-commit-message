@@ -5,10 +5,10 @@ description = "Generate Git commit messages from staged changes using LLM"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-	"babel>=2.17.0",
-	"google-genai>=1.56.0",
-	"ollama>=0.4.0",
-	"openai>=2.6.1",
+	"babel>=2.18.0",
+	"google-genai>=1.73.1",
+	"ollama>=0.6.1",
+	"openai>=2.32.0",
 ]
 maintainers = [{ name = "Mina Her", email = "minacle@live.com" }]
 license = { file = "UNLICENSE" }
@@ -30,12 +30,8 @@ classifiers = [
 git-commit-message = "git_commit_message:main"
 
 [build-system]
-requires = ["setuptools>=80", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-packages = ["git_commit_message"]
+requires = ["uv_build>=0.11.3,<0.12.0"]
+build-backend = "uv_build"
 
 [project.urls]
 Homepage = "https://github.com/minacle/git-commit-message"
