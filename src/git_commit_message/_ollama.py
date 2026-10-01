@@ -7,24 +7,12 @@ Mirrors the Gemini provider structure: a single provider class that exposes
 
 from __future__ import annotations
 
-from os import environ
-from typing import ClassVar, Final
+from typing import ClassVar
 
 from ollama import Client, ResponseError
 
+from ._config import resolve_provider_url
 from ._llm import LLMTextResult, LLMUsage
-
-
-_DEFAULT_OLLAMA_HOST: Final[str] = "http://localhost:11434"
-
-
-def _resolve_ollama_host(
-    host: str | None,
-    /,
-) -> str:
-    """Resolve the Ollama host URL from arg, env, or default."""
-
-    return host or environ.get("OLLAMA_HOST") or _DEFAULT_OLLAMA_HOST
 
 
 class OllamaProvider:
@@ -42,8 +30,9 @@ class OllamaProvider:
         /,
         *,
         host: str | None = None,
+        url: str | None = None,
     ) -> None:
-        self._host = _resolve_ollama_host(host)
+        self._host = resolve_provider_url("ollama", url=url, host=host)
         self._client = Client(host=self._host)
 
     def generate_text(

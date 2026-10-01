@@ -53,6 +53,7 @@ class CliArgs(Namespace):
         "no_log",
         "log_count",
         "host",
+        "url",
         "co_authors",
     )
 
@@ -77,6 +78,7 @@ class CliArgs(Namespace):
         self.no_log: bool = False
         self.log_count: int = 10
         self.host: str | None = None
+        self.url: str | None = None
         self.co_authors: list[str] | None = None
 
 
@@ -246,7 +248,7 @@ def _build_parser() -> ArgumentParser:
             "LLM provider to use (default: openai). "
             "You may also set GIT_COMMIT_MESSAGE_PROVIDER. "
             "The CLI flag overrides the environment variable. "
-            "Supported providers: openai, google, ollama, llamacpp."
+            "Supported providers: openai, google, openai-compatible, ollama, llamacpp."
         ),
     )
 
@@ -255,7 +257,7 @@ def _build_parser() -> ArgumentParser:
         default=None,
         help=(
             "Model name to use. If unspecified, uses GIT_COMMIT_MESSAGE_MODEL or a provider-specific default "
-            "(openai: gpt-5-mini; google: gemini-2.5-flash; ollama: gpt-oss:20b; llamacpp: default)."
+            "(openai: gpt-5-mini; google: gemini-2.5-flash; openai-compatible: explicitly required; ollama: gpt-oss:20b; llamacpp: default)."
         ),
     )
 
@@ -298,7 +300,7 @@ def _build_parser() -> ArgumentParser:
         help=(
             "Target token budget per diff chunk. "
             "0 forces a single chunk with summarisation; -1 disables summarisation (legacy one-shot). "
-            "For provider 'ollama', values >= 1 are not supported. "
+            "For providers 'openai-compatible' and 'ollama', values >= 1 are not supported. "
             "If omitted, uses GIT_COMMIT_MESSAGE_CHUNK_TOKENS when set (default: 0)."
         ),
     )
@@ -340,15 +342,20 @@ def _build_parser() -> ArgumentParser:
         ),
     )
 
-    parser.add_argument(
-        "--host",
-        dest="host",
+    url_options = parser.add_mutually_exclusive_group()
+    url_options.add_argument(
+        "--url",
         default=None,
         help=(
-            "Host URL for API providers like Ollama or llama.cpp "
-            "(default: http://localhost:11434 for Ollama, http://localhost:8080 for llama.cpp). "
-            "You may also set OLLAMA_HOST for Ollama or LLAMACPP_HOST for llama.cpp."
+            "Provider URL (OLLAMA_URL or LLAMACPP_URL may also be set). "
+            "For openai-compatible, an API base URL including /v1 when needed is required "
+            "via --url or OPENAI_COMPATIBLE_URL."
         ),
+    )
+    url_options.add_argument(
+        "--host",
+        default=None,
+        help="Deprecated alias for --url. OLLAMA_HOST and LLAMACPP_HOST are also deprecated.",
     )
 
     parser.add_argument(
@@ -385,6 +392,10 @@ def _run(
     int
         Process exit code. 0 indicates success; any other value indicates failure.
     """
+
+    if args.url is not None and args.host is not None:
+        print("--url and --host cannot be used together.", file=stderr)
+        return 2
 
     chunk_tokens: int | None = args.chunk_tokens
     if chunk_tokens is None:
@@ -463,6 +474,7 @@ def _run(
                 args.provider,
                 args.host,
                 args.conventional,
+                url=args.url,
                 branch=branch,
                 log=log,
             )
@@ -479,6 +491,7 @@ def _run(
                 args.provider,
                 args.host,
                 args.conventional,
+                url=args.url,
                 branch=branch,
                 log=log,
             )
