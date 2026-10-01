@@ -58,10 +58,40 @@ Chat Completions requests let Continuum Router translate requests for its
 ChatGPT subscription backend. ChatGPT authentication remains configured in
 Backend.AI GO; do not pass a ChatGPT OAuth token to this tool.
 
-If router authentication is enabled, set `OPENAI_API_KEY` to a router client
-access key. If it is disabled, a custom base URL can be used without a key;
-the client sends a non-secret placeholder required by the OpenAI SDK.
-The standard OpenAI endpoint still requires `OPENAI_API_KEY`.
+#### Router authentication
+
+Continuum Router can require API key authentication for client requests.
+Configure authentication in Backend.AI GO under **API > Security** and create
+a client access key under **API > Access keys**.
+
+Set `OPENAI_API_KEY` to that router client access key. The OpenAI SDK sends it
+as an `Authorization: Bearer` header to the configured router base URL.
+
+```sh
+export OPENAI_API_KEY="<router-client-access-key>"
+
+git-commit-message --provider openai \
+  --host http://127.0.0.1:39080/v1 \
+  --openai-api chat-completions \
+  --model MODEL_ID
+```
+
+The router client access key authenticates this tool to Continuum Router.
+It is separate from an OpenAI API key or ChatGPT OAuth token used by the router
+to access a model provider. Configure those upstream credentials in Backend.AI GO;
+do not substitute them for the router client access key.
+
+When router authentication is disabled, `OPENAI_API_KEY` can be omitted for a
+custom base URL. The client sends a non-secret placeholder required by the
+OpenAI SDK. An existing `OPENAI_API_KEY` is still sent to the custom server;
+unset it if no client credential should be supplied. The official OpenAI endpoint
+continues to require an OpenAI API key.
+
+For access from another device, configure router authentication before accepting
+remote traffic, as described in the
+[official API setup guide](https://go.backend.ai/en/manual/use-cases/building-apps-api/#step-1-enable-the-api).
+
+#### Default configuration
 
 Defaults can also be configured with environment variables:
 
