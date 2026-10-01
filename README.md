@@ -41,6 +41,45 @@ git-commit-message --help
 export OPENAI_API_KEY="sk-..."
 ```
 
+### Backend.AI GO / OpenAI-compatible servers
+
+Enable the Continuum Router TCP server in Backend.AI GO and select a model ID
+listed by `GET http://127.0.0.1:39080/v1/models`.
+
+```sh
+git-commit-message --provider openai \
+  --host http://127.0.0.1:39080/v1 \
+  --openai-api chat-completions \
+  --model MODEL_ID
+```
+
+The base URL must include `/v1`. `--host` overrides `OPENAI_BASE_URL`.
+Chat Completions requests let Continuum Router translate requests for its
+ChatGPT subscription backend. ChatGPT authentication remains configured in
+Backend.AI GO; do not pass a ChatGPT OAuth token to this tool.
+
+If router authentication is enabled, set `OPENAI_API_KEY` to a router client
+access key. If it is disabled, a custom base URL can be used without a key;
+the client sends a non-secret placeholder required by the OpenAI SDK.
+The standard OpenAI endpoint still requires `OPENAI_API_KEY`.
+
+Defaults can also be configured with environment variables:
+
+```sh
+export GIT_COMMIT_MESSAGE_PROVIDER=openai
+export OPENAI_BASE_URL=http://127.0.0.1:39080/v1
+export GIT_COMMIT_MESSAGE_OPENAI_API=chat-completions
+export OPENAI_MODEL=MODEL_ID
+```
+
+Chat Completions supports `--chunk-tokens 0` (the default summary-then-generation
+flow) and `--chunk-tokens -1` (direct generation). Positive chunk budgets require
+the Responses token-counting API and are not supported in Chat Completions mode.
+The API format defaults to `responses`; setting a custom URL does not change it.
+
+See the [Backend.AI GO API guide](https://go.backend.ai/ko/manual/use-cases/building-apps-api/)
+and [Continuum Router documentation](https://go.backend.ai/ko/manual/api-server/continuum-router/).
+
 ### Google Gemini
 
 ```sh
@@ -231,6 +270,7 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 ## Options
 
 - `--provider {openai,google,ollama,llamacpp}`: provider to use (default: `openai`)
+- `--openai-api {responses,chat-completions}`: OpenAI request format (default: `responses`); use `chat-completions` for Backend.AI GO.
 - `--model MODEL`: model override (provider-specific; ignored for llama.cpp)
 - `--language TAG`: output language/locale (default: `en-GB`)
 - `--conventional`: apply Conventional Commits constraints to the subject and footer behavior. The body format is unchanged and still includes the translated `Rationale:` line. Breaking changes are expressed with `!` in the subject line, and `BREAKING CHANGE` footer lines are not generated.
@@ -242,20 +282,22 @@ git-commit-message --provider llamacpp --host http://192.168.1.100:8080
 - `--commit`: run `git commit -m <message>`
 - `--amend`: generate a message suitable for amending the previous commit (diff is from the amended commit's parent to the staged index; if nothing is staged, this effectively becomes the diff introduced by `HEAD`)
 - `--edit`: with `--commit`, open editor for final message
-- `--host URL`: host URL for providers like Ollama or llama.cpp (default: `http://localhost:11434` for Ollama, `http://localhost:8080` for llama.cpp)
+- `--host URL`: full base URL including `/v1` for OpenAI, or host URL for Ollama or llama.cpp (default: `http://localhost:11434` for Ollama, `http://localhost:8080` for llama.cpp)
 - `--co-author VALUE`: append `Co-authored-by:` trailer(s). Repeat to add multiple values. Accepted forms: `Name <email@example.com>` or an alias keyword (`claude-code`, `codex`, `copilot`, `copilot-cli`; case-insensitive).
 
 ## Environment variables
 
 Required:
 
-- `OPENAI_API_KEY`: when provider is `openai`
+- `OPENAI_API_KEY`: when provider is `openai` with its standard endpoint, or a custom server requires authentication
 - `GOOGLE_API_KEY`: when provider is `google`
 
 Optional:
 
 - `GIT_COMMIT_MESSAGE_PROVIDER`: default provider (`openai` by default). `--provider` overrides this.
 - `GIT_COMMIT_MESSAGE_MODEL`: model override for any provider. `--model` overrides this.
+- `OPENAI_BASE_URL`: full OpenAI-compatible base URL including `/v1`; overridden by `--host`.
+- `GIT_COMMIT_MESSAGE_OPENAI_API`: OpenAI API format (`responses` or `chat-completions`).
 - `OPENAI_MODEL`: OpenAI-only model override (used if `--model`/`GIT_COMMIT_MESSAGE_MODEL` are not set)
 - `OLLAMA_MODEL`: Ollama-only model override (used if `--model`/`GIT_COMMIT_MESSAGE_MODEL` are not set)
 - `OLLAMA_HOST`: Ollama server URL (default: `http://localhost:11434`)

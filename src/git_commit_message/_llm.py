@@ -140,6 +140,7 @@ def get_provider(
     /,
     *,
     host: str | None = None,
+    openai_api: str | None = None,
 ) -> CommitMessageProvider:
     name = resolve_provider_name(provider)
 
@@ -147,7 +148,7 @@ def get_provider(
         # Local import to avoid import cycles: providers may import shared types from this module.
         from ._gpt import OpenAIResponsesProvider
 
-        return OpenAIResponsesProvider()
+        return OpenAIResponsesProvider(host=host, api=openai_api)
 
     if name == "google":
         # Local import to avoid import cycles: providers may import shared types from this module.
@@ -509,17 +510,19 @@ def generate_commit_message(
     *,
     branch: str | None = None,
     log: str | None = None,
+    openai_api: str | None = None,
 ) -> str:
     chosen_provider = resolve_provider_name(provider)
     chosen_model = resolve_model_name(model, chosen_provider)
     chosen_language = resolve_language_tag(language)
 
-    llm = get_provider(chosen_provider, host=host)
+    llm = get_provider(chosen_provider, host=host, openai_api=openai_api)
 
     normalized_chunk_tokens = 0 if chunk_tokens is None else chunk_tokens
     provider_arg_error = validate_provider_chunk_tokens(
         chosen_provider,
         normalized_chunk_tokens,
+        openai_api=openai_api,
     )
     if provider_arg_error is not None:
         raise ValueError(provider_arg_error)
@@ -577,17 +580,19 @@ def generate_commit_message_with_info(
     *,
     branch: str | None = None,
     log: str | None = None,
+    openai_api: str | None = None,
 ) -> CommitMessageResult:
     chosen_provider = resolve_provider_name(provider)
     chosen_model = resolve_model_name(model, chosen_provider)
     chosen_language = resolve_language_tag(language)
 
-    llm = get_provider(chosen_provider, host=host)
+    llm = get_provider(chosen_provider, host=host, openai_api=openai_api)
 
     normalized_chunk_tokens = 0 if chunk_tokens is None else chunk_tokens
     provider_arg_error = validate_provider_chunk_tokens(
         chosen_provider,
         normalized_chunk_tokens,
+        openai_api=openai_api,
     )
     if provider_arg_error is not None:
         raise ValueError(provider_arg_error)

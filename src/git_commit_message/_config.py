@@ -54,6 +54,8 @@ def validate_provider_chunk_tokens(
     provider_name: str,
     chunk_tokens: int,
     /,
+    *,
+    openai_api: str | None = None,
 ) -> str | None:
     if chunk_tokens < -1:
         return (
@@ -66,6 +68,13 @@ def validate_provider_chunk_tokens(
             "'--chunk-tokens' with values >= 1 is not supported for provider 'ollama'. "
             "Use '--chunk-tokens 0' (single summary pass) or '--chunk-tokens -1' "
             "(disable summarisation)."
+        )
+
+    chosen_api = openai_api or environ.get("GIT_COMMIT_MESSAGE_OPENAI_API") or "responses"
+    if provider_name == "openai" and chosen_api == "chat-completions" and chunk_tokens > 0:
+        return (
+            "Positive --chunk-tokens budgets are unavailable for Chat Completions. "
+            "Use --chunk-tokens 0 or --chunk-tokens -1."
         )
 
     return None

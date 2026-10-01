@@ -42,6 +42,7 @@ class CliArgs(Namespace):
         "edit",
         "conventional",
         "provider",
+        "openai_api",
         "model",
         "language",
         "debug",
@@ -66,6 +67,7 @@ class CliArgs(Namespace):
         self.edit: bool = False
         self.conventional: bool = False
         self.provider: str | None = None
+        self.openai_api: str | None = None
         self.model: str | None = None
         self.language: str | None = None
         self.debug: bool = False
@@ -251,6 +253,18 @@ def _build_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
+        "--openai-api",
+        choices=("responses", "chat-completions"),
+        default=None,
+        help=(
+            "OpenAI API format: responses (default) or chat-completions. "
+            "May also be set with GIT_COMMIT_MESSAGE_OPENAI_API. "
+            "Use chat-completions for Backend.AI GO. "
+            "Chat Completions supports --chunk-tokens 0 or -1 only."
+        ),
+    )
+
+    parser.add_argument(
         "--model",
         default=None,
         help=(
@@ -345,9 +359,9 @@ def _build_parser() -> ArgumentParser:
         dest="host",
         default=None,
         help=(
-            "Host URL for API providers like Ollama or llama.cpp "
+            "Server URL for Ollama or llama.cpp, or full OpenAI base URL including /v1 "
             "(default: http://localhost:11434 for Ollama, http://localhost:8080 for llama.cpp). "
-            "You may also set OLLAMA_HOST for Ollama or LLAMACPP_HOST for llama.cpp."
+            "You may also set OPENAI_BASE_URL, OLLAMA_HOST, or LLAMACPP_HOST."
         ),
     )
 
@@ -411,7 +425,9 @@ def _run(
         return 2
 
     provider_name: str = resolve_provider_name(args.provider)
-    provider_arg_error = validate_provider_chunk_tokens(provider_name, chunk_tokens)
+    provider_arg_error = validate_provider_chunk_tokens(
+        provider_name, chunk_tokens, openai_api=args.openai_api
+    )
     if provider_arg_error is not None:
         print(provider_arg_error, file=stderr)
         return 2
@@ -465,6 +481,7 @@ def _run(
                 args.conventional,
                 branch=branch,
                 log=log,
+                openai_api=args.openai_api,
             )
             message = result.message
         else:
@@ -481,6 +498,7 @@ def _run(
                 args.conventional,
                 branch=branch,
                 log=log,
+                openai_api=args.openai_api,
             )
     except UnsupportedProviderError as exc:
         print(str(exc), file=stderr)
