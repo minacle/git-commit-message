@@ -7,25 +7,13 @@ Provider-agnostic orchestration/prompt logic lives in `_llm.py`.
 
 from __future__ import annotations
 
-from os import environ
-from typing import ClassVar, Final
+from typing import ClassVar
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
+from ._config import resolve_provider_url
 from ._llm import LLMTextResult, LLMUsage
-
-
-_DEFAULT_LLAMACPP_HOST: Final[str] = "http://localhost:8080"
-
-
-def _resolve_llamacpp_host(
-    host: str | None,
-    /,
-) -> str:
-    """Resolve the llama.cpp server host URL from arg, env, or default."""
-
-    return host or environ.get("LLAMACPP_HOST") or _DEFAULT_LLAMACPP_HOST
 
 
 class LlamaCppProvider:
@@ -46,12 +34,13 @@ class LlamaCppProvider:
         /,
         *,
         host: str | None = None,
+        url: str | None = None,
     ) -> None:
-        self._host = _resolve_llamacpp_host(host)
+        self._host = resolve_provider_url("llamacpp", url=url, host=host)
         # llama.cpp server uses OpenAI-compatible API
         # api_key is not required but openai library needs a placeholder
         self._client = OpenAI(
-            base_url=f"{self._host}/v1",
+            base_url=f"{self._host.rstrip('/')}/v1",
             api_key="llamacpp",  # Placeholder, llama.cpp doesn't require auth by default
         )
 
