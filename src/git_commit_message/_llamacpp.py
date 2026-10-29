@@ -6,25 +6,15 @@ Provider-agnostic orchestration/prompt logic lives in `_llm.py`.
 from __future__ import annotations
 
 from json import JSONDecodeError, dumps, loads
-from os import environ
 from typing import ClassVar, Final
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from ._config import resolve_provider_url
 from ._llm import LLMTextResult, LLMUsage
 
 
-_DEFAULT_LLAMACPP_HOST: Final[str] = "http://localhost:8080"
 _REQUEST_TIMEOUT: Final[int] = 600
-
-
-def _resolve_llamacpp_host(
-    host: str | None,
-    /,
-) -> str:
-    """Resolve the server root URL from arg, env, or default."""
-
-    return (host or environ.get("LLAMACPP_HOST") or _DEFAULT_LLAMACPP_HOST).rstrip("/")
 
 
 class LlamaCppProvider:
@@ -39,8 +29,9 @@ class LlamaCppProvider:
         /,
         *,
         host: str | None = None,
+        url: str | None = None,
     ) -> None:
-        self._host = _resolve_llamacpp_host(host)
+        self._host = resolve_provider_url("llamacpp", url=url, host=host).rstrip("/")
 
     def _post(
         self,

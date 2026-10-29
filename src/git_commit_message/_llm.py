@@ -140,8 +140,17 @@ def get_provider(
     /,
     *,
     host: str | None = None,
+    url: str | None = None,
 ) -> CommitMessageProvider:
     name = resolve_provider_name(provider)
+    if host is not None and url is not None:
+        raise ValueError("--url and --host cannot be used together.")
+
+    if name in ("openai", "google") and (url is not None or host is not None):
+        raise ValueError(
+            f"Provider '{name}' does not support --url or --host. "
+            "For a Chat Completions endpoint, use --provider openai-compatible."
+        )
 
     if name == "openai":
         # Local import to avoid import cycles: providers may import shared types from this module.
@@ -155,20 +164,25 @@ def get_provider(
 
         return GoogleGenAIProvider()
 
+    if name == "openai-compatible":
+        from ._openai_compatible import OpenAICompatibleProvider
+
+        return OpenAICompatibleProvider(url=url, host=host)
+
     if name == "ollama":
         # Local import to avoid import cycles: providers may import shared types from this module.
         from ._ollama import OllamaProvider
 
-        return OllamaProvider(host=host)
+        return OllamaProvider(host=host, url=url)
 
     if name == "llamacpp":
         # Local import to avoid import cycles: providers may import shared types from this module.
         from ._llamacpp import LlamaCppProvider
 
-        return LlamaCppProvider(host=host)
+        return LlamaCppProvider(host=host, url=url)
 
     raise UnsupportedProviderError(
-        f"Unsupported provider: {name}. Supported providers: openai, google, ollama, llamacpp"
+        f"Unsupported provider: {name}. Supported providers: openai, google, openai-compatible, ollama, llamacpp"
     )
 
 
@@ -507,14 +521,13 @@ def generate_commit_message(
     conventional: bool = False,
     /,
     *,
+    url: str | None = None,
     branch: str | None = None,
     log: str | None = None,
 ) -> str:
     chosen_provider = resolve_provider_name(provider)
     chosen_model = resolve_model_name(model, chosen_provider)
     chosen_language = resolve_language_tag(language)
-
-    llm = get_provider(chosen_provider, host=host)
 
     normalized_chunk_tokens = 0 if chunk_tokens is None else chunk_tokens
     provider_arg_error = validate_provider_chunk_tokens(
@@ -523,6 +536,8 @@ def generate_commit_message(
     )
     if provider_arg_error is not None:
         raise ValueError(provider_arg_error)
+
+    llm = get_provider(chosen_provider, host=host, url=url)
 
     if normalized_chunk_tokens != -1:
         hunks = _split_diff_into_hunks(diff)
@@ -575,14 +590,13 @@ def generate_commit_message_with_info(
     conventional: bool = False,
     /,
     *,
+    url: str | None = None,
     branch: str | None = None,
     log: str | None = None,
 ) -> CommitMessageResult:
     chosen_provider = resolve_provider_name(provider)
     chosen_model = resolve_model_name(model, chosen_provider)
     chosen_language = resolve_language_tag(language)
-
-    llm = get_provider(chosen_provider, host=host)
 
     normalized_chunk_tokens = 0 if chunk_tokens is None else chunk_tokens
     provider_arg_error = validate_provider_chunk_tokens(
@@ -591,6 +605,8 @@ def generate_commit_message_with_info(
     )
     if provider_arg_error is not None:
         raise ValueError(provider_arg_error)
+
+    llm = get_provider(chosen_provider, host=host, url=url)
 
     response_id: str | None = None
 
