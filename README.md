@@ -71,33 +71,23 @@ export OLLAMA_MODEL=mistral
 
 ### llama.cpp (local models)
 
-The provider calls llama.cpp's `/chat/completions` and `/tokenize` endpoints
-directly with standard-library HTTP requests, without the OpenAI SDK. The chat
-endpoint uses the OpenAI-compatible response structure. Verified with llama.cpp
-`b11960-8642541b2` (0.8.0); servers must support both endpoints.
-
 1. Install llama.cpp if needed (macOS):
 
 ```sh
 brew install llama.cpp
 ```
 
-2. Download/cache a model and run the server. For example, on an Apple Silicon
-Mac with 32 GB of memory:
+2. Download a GGUF model suitable for your hardware and start the server:
 
 ```sh
 llama-server \
-  --hf-repo Qwen/Qwen3-14B-GGUF:Q4_K_M \
-  --alias qwen3-14b \
+  --model /path/to/model.gguf \
   --host 127.0.0.1 --port 8080 \
-  --gpu-layers all --ctx-size 16384 --parallel 1 \
-  --jinja --chat-template-kwargs '{"enable_thinking":false}' \
-  --temp 0.7 --top-p 0.8 --top-k 20 --min-p 0
+  --jinja
 ```
 
-The first invocation downloads the GGUF weights; subsequent runs reuse the cache.
-Qwen3-14B also has an [MLX release](https://huggingface.co/mlx-community/Qwen3-14B-4bit),
-but llama.cpp uses the GGUF weights and does not need MLX installed.
+Choose the context size and other model settings for your hardware and expected
+input length. Keep the server running while using the CLI.
 
 3. Check readiness from another terminal:
 
@@ -105,31 +95,24 @@ but llama.cpp uses the GGUF weights and does not need MLX installed.
 curl --fail http://127.0.0.1:8080/health
 ```
 
-The expected response after loading is `{"status":"ok"}`. Keep the server running
-while using the CLI. The default host is `http://localhost:8080`; supply the server
-root URL, without `/v1`.
+The expected response after loading is `{"status":"ok"}`. The default host is
+`http://localhost:8080`; supply the server root URL, without `/v1`.
+
+The server must support `/chat/completions`, `/tokenize`, and verbose context
+truncation metadata. The CLI rejects responses with missing or invalid truncation
+metadata, discarded context, incomplete generation, or an empty final answer.
+Requests time out after 600 seconds and are not automatically retried.
 
 The server's pre-loaded model is used; `--model` does not select or load a model
 for this provider. Chat formatting, thinking, and sampling follow the server's
-settings. The client does not set `reasoning_format` or other reasoning options:
-it uses only the final assistant `message.content`, leaving any separate reasoning
-field out of summaries and commit messages. The server must support the model's
-chat template and separate reasoning from final content. Settings that leave
-reasoning in `content` (such as `--reasoning-format none` or `--skip-chat-parsing`)
-do not meet that requirement. The client does not recognise or strip model-specific
-reasoning tags, so it cannot detect reasoning mixed into final content.
+settings. For thinking models, configure the server to separate reasoning from
+the final answer. Settings such as `--reasoning-format none` or
+`--skip-chat-parsing` leave reasoning in the answer and are unsuitable. The CLI
+does not remove model-specific reasoning tags.
 
-The client makes synchronous requests with a 600-second timeout per request and
-no automatic retries. It requests `verbose: true` and requires a boolean
-`__verbose.truncated` field to verify context preservation. Missing or malformed
-metadata and context-truncated responses are rejected, even when `finish_reason`
-is `stop`. Empty final answers and other finish reasons (including generation
-limits) are also rejected.
-
-Positive `--chunk-tokens` values count raw diff tokens through `/tokenize`,
-excluding special tokens and chat-template overhead. Leave room for instructions,
-context, and output: this budget does not guarantee the full request fits the
-server's context window. `0` uses one summary pass; `-1` skips summarisation.
+Positive `--chunk-tokens` values budget only the diff text. Leave room in the
+server's context window for instructions, other context, and the generated answer.
+`0` uses one summary pass over the entire diff; `-1` skips summarisation.
 
 Optional: set defaults:
 
