@@ -71,13 +71,48 @@ export OLLAMA_MODEL=mistral
 
 ### llama.cpp (local models)
 
-1. Build and run llama.cpp server with your model:
+1. Install llama.cpp if needed (macOS):
 
 ```sh
-llama-server -hf ggml-org/gpt-oss-20b-GGUF --host 0.0.0.0 --port 8080
+brew install llama.cpp
 ```
 
-2. The server runs on `http://localhost:8080` by default.
+2. Download a GGUF model suitable for your hardware and start the server:
+
+```sh
+llama-server \
+  --model /path/to/model.gguf \
+  --host 127.0.0.1 --port 8080 \
+  --jinja
+```
+
+Choose the context size and other model settings for your hardware and expected
+input length. Keep the server running while using the CLI.
+
+3. Check readiness from another terminal:
+
+```sh
+curl --fail http://127.0.0.1:8080/health
+```
+
+The expected response after loading is `{"status":"ok"}`. The default host is
+`http://localhost:8080`; supply the server root URL, without `/v1`.
+
+The server must support `/chat/completions`, `/tokenize`, and verbose context
+truncation metadata. The CLI rejects responses with missing or invalid truncation
+metadata, discarded context, incomplete generation, or an empty final answer.
+Requests time out after 600 seconds and are not automatically retried.
+
+The server's pre-loaded model is used; `--model` does not select or load a model
+for this provider. Chat formatting, thinking, and sampling follow the server's
+settings. For thinking models, configure the server to separate reasoning from
+the final answer. Settings such as `--reasoning-format none` or
+`--skip-chat-parsing` leave reasoning in the answer and are unsuitable. The CLI
+does not remove model-specific reasoning tags.
+
+Positive `--chunk-tokens` values budget only the diff text. Leave room in the
+server's context window for instructions, other context, and the generated answer.
+`0` uses one summary pass over the entire diff; `-1` skips summarisation.
 
 Optional: set defaults:
 
@@ -260,6 +295,7 @@ Optional:
 - `OLLAMA_MODEL`: Ollama-only model override (used if `--model`/`GIT_COMMIT_MESSAGE_MODEL` are not set)
 - `OLLAMA_HOST`: Ollama server URL (default: `http://localhost:11434`)
 - `LLAMACPP_HOST`: llama.cpp server URL (default: `http://localhost:8080`)
+- `LLAMACPP_MODEL`: llama.cpp-only model label override; the server's pre-loaded model is still used
 - `GIT_COMMIT_MESSAGE_LANGUAGE`: default language/locale (default: `en-GB`)
 - `GIT_COMMIT_MESSAGE_CHUNK_TOKENS`: default chunk token budget (default: `0`; for `ollama`, values `>= 1` are not supported)
 - `GIT_COMMIT_MESSAGE_DIFF_CONTEXT`: default unified diff context lines (`0` or greater). If unset, Git default is used (usually `3`).
