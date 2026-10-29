@@ -17,7 +17,6 @@ from ._config import (
     resolve_language_tag,
     resolve_model_name,
     resolve_provider_name,
-    resolve_provider_url,
     validate_provider_chunk_tokens,
 )
 
@@ -147,8 +146,11 @@ def get_provider(
     if host is not None and url is not None:
         raise ValueError("--url and --host cannot be used together.")
 
-    if name in ("openai", "google") and host is not None:
-        resolve_provider_url(name, host=host)
+    if name in ("openai", "google") and (url is not None or host is not None):
+        raise ValueError(
+            f"Provider '{name}' does not support --url or --host. "
+            "For a Chat Completions endpoint, use --provider openai-compatible."
+        )
 
     if name == "openai":
         # Local import to avoid import cycles: providers may import shared types from this module.

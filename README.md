@@ -296,7 +296,7 @@ git-commit-message --provider llamacpp --url http://192.168.1.100:8080
 - `--amend`: generate a message suitable for amending the previous commit (diff is from the amended commit's parent to the staged index; if nothing is staged, this effectively becomes the diff introduced by `HEAD`)
 - `--edit`: with `--commit`, open editor for final message
 - `--url URL`: provider URL (default: `http://localhost:11434` for Ollama, `http://localhost:8080` for llama.cpp). For `openai-compatible`, an API base URL is required via this option or `OPENAI_COMPATIBLE_URL`. llama.cpp uses its server root URL; `openai-compatible` uses the supplied base URL directly.
-- `--host URL`: deprecated alias for `--url`; prints a warning to stderr. Specifying both options is an error.
+- `--host URL`: deprecated alias for `--url`; prints a warning to stderr. Specifying both options is an error. Neither `--url` nor `--host` is supported by the `openai` or `google` provider.
 - `--co-author VALUE`: append `Co-authored-by:` trailer(s). Repeat to add multiple values. Accepted forms: `Name <email@example.com>` or an alias keyword (`claude-code`, `codex`, `copilot`, `copilot-cli`; case-insensitive).
 
 ## Environment variables
