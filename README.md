@@ -71,10 +71,10 @@ export OLLAMA_MODEL=mistral
 
 ### llama.cpp (local models)
 
-The provider uses llama.cpp's native `/apply-template`, `/completion`, and
-`/tokenize` endpoints, without the OpenAI SDK. Verified with llama.cpp
-`b11960-8642541b2` (0.8.0). Older servers must support these native endpoints;
-there is no fallback to the OpenAI-compatible API.
+The provider calls llama.cpp's `/chat/completions` and `/tokenize` endpoints
+directly with standard-library HTTP requests, without the OpenAI SDK. The chat
+endpoint uses the OpenAI-compatible response structure. Verified with llama.cpp
+`b11960-8642541b2` (0.8.0); servers must support both endpoints.
 
 1. Install llama.cpp if needed (macOS):
 
@@ -111,9 +111,18 @@ root URL, without `/v1`.
 
 The server's pre-loaded model is used; `--model` does not select or load a model
 for this provider. Chat formatting, thinking, and sampling follow the server's
-settings. The client makes synchronous requests with a 600-second timeout per
-request and no automatic retries. Context-truncated or generation-limited
-responses are rejected instead of returned as complete messages.
+settings. The client does not set `reasoning_format` or other reasoning options:
+it uses only the final assistant `message.content`, leaving any separate reasoning
+field out of summaries and commit messages. The server must support the model's
+chat template and separate reasoning from final content. Settings that leave
+reasoning in `content` (such as `--reasoning-format none` or `--skip-chat-parsing`)
+do not meet that requirement. The client does not recognise or strip model-specific
+reasoning tags, so it cannot detect reasoning mixed into final content.
+
+The client makes synchronous requests with a 600-second timeout per request and
+no automatic retries. Empty final answers and responses whose `finish_reason` is
+not `stop` (including generation limits) are rejected, as are responses explicitly
+marked as context-truncated.
 
 Positive `--chunk-tokens` values count raw diff tokens through `/tokenize`,
 excluding special tokens and chat-template overhead. Leave room for instructions,

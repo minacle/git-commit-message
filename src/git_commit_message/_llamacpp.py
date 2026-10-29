@@ -1,4 +1,4 @@
-"""llama.cpp native HTTP API calls and token counting.
+"""Direct llama.cpp HTTP API calls and token counting.
 
 Provider-agnostic orchestration/prompt logic lives in `_llm.py`.
 """
@@ -28,7 +28,7 @@ def _resolve_llamacpp_host(
 
 
 class LlamaCppProvider:
-    """Use the native API of a server with a pre-loaded model."""
+    """Use the chat and tokenisation APIs of a server with a pre-loaded model."""
 
     __slots__ = ("_host",)
 
@@ -63,7 +63,7 @@ class LlamaCppProvider:
         except HTTPError as exc:
             raise RuntimeError(
                 f"llama.cpp request to {url} failed: HTTP {exc.code} {exc.reason}. "
-                "Check that the server supports the required native API."
+                "Check that the server supports the required API endpoint."
             ) from exc
         except (URLError, OSError) as exc:
             raise RuntimeError(f"llama.cpp request to {url} failed: {exc}") from exc
@@ -82,60 +82,67 @@ class LlamaCppProvider:
         instructions: str,
         user_text: str,
     ) -> LLMTextResult:
-        """Apply the server's chat template, then generate a completion.
+        """Return only the final assistant content from the server's chat API.
 
+        Chat formatting and reasoning separation are the server's responsibility.
         :param model: Kept for protocol compatibility; the server's loaded model is used.
         """
 
-        template = self._post("/apply-template", {
+        response = self._post("/chat/completions", {
             "messages": [
                 {"role": "system", "content": instructions},
                 {"role": "user", "content": user_text},
             ],
+            "stream": False,
         })
-        prompt = template.get("prompt")
-        if not isinstance(prompt, str) or not prompt.strip():
-            raise RuntimeError("llama.cpp /apply-template returned an invalid or empty prompt.")
-
-        response = self._post("/completion", {"prompt": prompt, "stream": False})
-        content = response.get("content")
-        if not isinstance(content, str) or not content.strip():
-            raise RuntimeError("llama.cpp /completion returned invalid or empty response text.")
-        truncated = response.get("truncated")
-        stop_type = response.get("stop_type")
-        if truncated is not None and type(truncated) is not bool:
-            raise RuntimeError("llama.cpp /completion returned an invalid truncated flag.")
-        if stop_type is not None and stop_type not in ("eos", "word", "limit"):
-            raise RuntimeError("llama.cpp /completion returned an invalid stop_type.")
-        if truncated is True or stop_type == "limit":
+        choices = response.get("choices")
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            raise RuntimeError("llama.cpp /chat/completions returned invalid choices.")
+        choice = choices[0]
+        if choice.get("finish_reason") != "stop":
             raise RuntimeError(
-                "llama.cpp /completion returned an incomplete response (context or generation limit). "
-                "Increase the server limit or reduce the input/chunk size."
+                "llama.cpp /chat/completions did not finish with a complete text answer "
+                f"(finish_reason={choice.get('finish_reason')!r}). "
+                "Check the server limits and configuration."
             )
+        if response.get("truncated") is True:
+            raise RuntimeError("llama.cpp /chat/completions returned a context-truncated response.")
+        message = choice.get("message")
+        if not isinstance(message, dict):
+            raise RuntimeError("llama.cpp /chat/completions returned an invalid message.")
+        content = message.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise RuntimeError("llama.cpp /chat/completions returned invalid or empty final answer text.")
 
-        counts: list[int | None] = []
-        for field in ("tokens_evaluated", "tokens_predicted"):
-            count = response.get(field)
-            if count is None:
-                counts.append(None)
-                continue
-            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-                raise RuntimeError(f"llama.cpp /completion returned invalid {field}.")
-            counts.append(count)
-        prompt_tokens, completion_tokens = counts
-        total_tokens = (
-            prompt_tokens + completion_tokens
-            if prompt_tokens is not None and completion_tokens is not None
-            else None
-        )
-        return LLMTextResult(
-            text=content.strip(),
-            response_id=None,
-            usage=LLMUsage(
+        usage_data = response.get("usage")
+        usage: LLMUsage | None = None
+        if usage_data is not None:
+            if not isinstance(usage_data, dict):
+                raise RuntimeError("llama.cpp /chat/completions returned invalid usage.")
+            counts: list[int | None] = []
+            for field in ("prompt_tokens", "completion_tokens", "total_tokens"):
+                count = usage_data.get(field)
+                if count is None:
+                    counts.append(None)
+                    continue
+                if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                    raise RuntimeError(f"llama.cpp /chat/completions returned invalid {field}.")
+                counts.append(count)
+            prompt_tokens, completion_tokens, total_tokens = counts
+            if total_tokens is None and prompt_tokens is not None and completion_tokens is not None:
+                total_tokens = prompt_tokens + completion_tokens
+            usage = LLMUsage(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
-            ),
+            )
+        response_id = response.get("id")
+        if response_id is not None and not isinstance(response_id, str):
+            raise RuntimeError("llama.cpp /chat/completions returned an invalid response ID.")
+        return LLMTextResult(
+            text=content.strip(),
+            response_id=response_id,
+            usage=usage,
         )
 
     def count_tokens(
