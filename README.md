@@ -120,9 +120,11 @@ do not meet that requirement. The client does not recognise or strip model-speci
 reasoning tags, so it cannot detect reasoning mixed into final content.
 
 The client makes synchronous requests with a 600-second timeout per request and
-no automatic retries. Empty final answers and responses whose `finish_reason` is
-not `stop` (including generation limits) are rejected, as are responses explicitly
-marked as context-truncated.
+no automatic retries. It requests `verbose: true` and requires a boolean
+`__verbose.truncated` field to verify context preservation. Missing or malformed
+metadata and context-truncated responses are rejected, even when `finish_reason`
+is `stop`. Empty final answers and other finish reasons (including generation
+limits) are also rejected.
 
 Positive `--chunk-tokens` values count raw diff tokens through `/tokenize`,
 excluding special tokens and chat-template overhead. Leave room for instructions,

@@ -31,7 +31,7 @@ class LlamaCppTests(TestCase):
         for tokens in ([], [1, 2, 3]):
             with self.subTest(tokens=tokens), patch("git_commit_message._llamacpp.urlopen",
                                                    return_value=BytesIO(dumps({"tokens": tokens}).encode())) as send:
-                self.assertEqual(LlamaCppProvider().count_tokens(model="ignored", text="<|im_end|>"), len(tokens))
+                self.assertEqual(LlamaCppProvider(host="http://localhost:8080").count_tokens(model="ignored", text="<|im_end|>"), len(tokens))
                 self.assertEqual(send.call_args.args[0].full_url, "http://localhost:8080/tokenize")
                 self.assertEqual(loads(send.call_args.args[0].data), {
                     "content": "<|im_end|>", "add_special": False,

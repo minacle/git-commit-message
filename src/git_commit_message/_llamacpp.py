@@ -94,6 +94,7 @@ class LlamaCppProvider:
                 {"role": "user", "content": user_text},
             ],
             "stream": False,
+            "verbose": True,
         })
         choices = response.get("choices")
         if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
@@ -105,7 +106,13 @@ class LlamaCppProvider:
                 f"(finish_reason={choice.get('finish_reason')!r}). "
                 "Check the server limits and configuration."
             )
-        if response.get("truncated") is True:
+        verbose = response.get("__verbose")
+        if not isinstance(verbose, dict) or type(verbose.get("truncated")) is not bool:
+            raise RuntimeError(
+                "llama.cpp /chat/completions returned missing or invalid __verbose.truncated metadata; "
+                "cannot verify context preservation."
+            )
+        if verbose["truncated"]:
             raise RuntimeError("llama.cpp /chat/completions returned a context-truncated response.")
         message = choice.get("message")
         if not isinstance(message, dict):
