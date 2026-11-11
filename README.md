@@ -53,7 +53,7 @@ Set an API base URL (including `/v1` if required by the server) and a model name
 
 ```sh
 export OPENAI_COMPATIBLE_URL="https://api.openai.com/v1"
-export OPENAI_COMPATIBLE_MODEL="gpt-5-mini"
+export OPENAI_COMPATIBLE_MODEL="gpt-6.1-terra"
 export OPENAI_COMPATIBLE_API_KEY="sk-..."
 git-commit-message --provider openai-compatible
 ```
@@ -329,8 +329,8 @@ Model precedence for `openai-compatible`: `--model` → `GIT_COMMIT_MESSAGE_MODE
 
 Default models (if not overridden):
 
-- OpenAI: `gpt-5-mini`
-- Google: `gemini-2.5-flash`
+- OpenAI: `gpt-6.1-terra`
+- Google: `gemini-3.5-flash-lite`
 - Ollama: `gpt-oss:20b`
 - llama.cpp: uses pre-loaded model (model parameter is ignored)
 

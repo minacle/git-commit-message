@@ -25,7 +25,12 @@ from ._git import (
     has_staged_changes,
     resolve_amend_base_ref,
 )
-from ._config import resolve_provider_name, validate_provider_chunk_tokens
+from ._config import (
+    DEFAULT_MODEL_GOOGLE,
+    DEFAULT_MODEL_OPENAI,
+    resolve_provider_name,
+    validate_provider_chunk_tokens,
+)
 from ._llm import (
     CommitMessageResult,
     UnsupportedProviderError,
@@ -257,7 +262,8 @@ def _build_parser() -> ArgumentParser:
         default=None,
         help=(
             "Model name to use. If unspecified, uses GIT_COMMIT_MESSAGE_MODEL or a provider-specific default "
-            "(openai: gpt-5-mini; google: gemini-2.5-flash; openai-compatible: explicitly required; ollama: gpt-oss:20b; llamacpp: default)."
+            f"(openai: {DEFAULT_MODEL_OPENAI}; google: {DEFAULT_MODEL_GOOGLE}; "
+            "openai-compatible: explicitly required; ollama: gpt-oss:20b; llamacpp: default)."
         ),
     )
 
