@@ -8,8 +8,8 @@ from typing import Final
 
 
 DEFAULT_PROVIDER: Final[str] = "openai"
-DEFAULT_MODEL_OPENAI: Final[str] = "gpt-5-mini"
-DEFAULT_MODEL_GOOGLE: Final[str] = "gemini-2.5-flash"
+DEFAULT_MODEL_OPENAI: Final[str] = "gpt-6.1-terra"
+DEFAULT_MODEL_GOOGLE: Final[str] = "gemini-3.5-flash-lite"
 DEFAULT_MODEL_OLLAMA: Final[str] = "gpt-oss:20b"
 DEFAULT_MODEL_LLAMACPP: Final[str] = "default"
 DEFAULT_LANGUAGE: Final[str] = "en-GB"
